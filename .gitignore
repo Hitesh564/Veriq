@@ -49,3 +49,7 @@ Thumbs.db
 
 # Local tools package
 kickbacks-ai.vsix
+
+# Exclude Markdown documentation files
+*.md
+**/*.md
