@@ -1,0 +1,51 @@
+# Virtual environments
+aienv/
+venv/
+.venv/
+env/
+
+# Dependency directories
+node_modules/
+jspm_packages/
+web_stage/
+
+# Next.js build output
+.next/
+out/
+
+# Database files
+*.db
+*.sqlite
+dev.db
+
+# Environmental secrets
+.env
+.env.local
+.env.*.local
+
+# Logs and debugs
+*.log
+backend_stdout.log
+backend_stderr.log
+debug.log
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE settings
+.vscode/
+.idea/
+
+# Local tools package
+kickbacks-ai.vsix

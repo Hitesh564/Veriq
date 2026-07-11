@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+langgraph
+langchain-google-genai
+python-dotenv
+qdrant-client
+pypdf
+python-multipart
+av
+nvidia-riva-client
+psycopg2-binary
+supabase
