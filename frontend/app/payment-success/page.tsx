@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../utils/supabaseClient";
+import { safeFetch } from "../utils/api";
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
-  const [activated, setActivated] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export default function PaymentSuccessPage() {
           return;
         }
         
-        fetch("http://127.0.0.1:8000/api/v1/payments/webhook", {
+        safeFetch("/api/v1/payments/webhook", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -40,18 +40,13 @@ export default function PaymentSuccessPage() {
               }
             }
           })
-        })
-          .then(() => {
-            setActivated(true);
+          })
+          .then((res) => {
             setLoading(false);
           })
-          .catch((err) => {
-            console.error("Mock webhook registration failed:", err);
-            setLoading(false);
-          });
+          .finally(() => setLoading(false));
       });
     } else {
-      setActivated(true);
       setLoading(false);
     }
   }, []);

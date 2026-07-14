@@ -1,9 +1,13 @@
 import os
 import json
+import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from typing import Dict, Any, List, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from app.agents.profiles import ROLE_PROFILES
+
+LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", "25"))
 
 def normalize_interview_objectives(objectives, fallback=None) -> dict:
     """
@@ -270,10 +274,19 @@ def build_interview_blueprint(
                 "}"
             )
             
-            response = llm.invoke([
-                SystemMessage(content=planner_prompt),
-                HumanMessage(content="Generate the interview blueprint.")
-            ])
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(
+                    llm.invoke,
+                    [
+                        SystemMessage(content=planner_prompt),
+                        HumanMessage(content="Generate the interview blueprint.")
+                    ]
+                )
+                try:
+                    response = future.result(timeout=LLM_TIMEOUT_SECONDS)
+                except FuturesTimeoutError:
+                    print(f"[WARNING] build_interview_blueprint LLM timed out after {LLM_TIMEOUT_SECONDS}s. Utilizing fallback blueprint.")
+                    raise TimeoutError("Interview blueprint generation timed out.")
             
             content_val = response.content
             if isinstance(content_val, list):
@@ -460,4 +473,3 @@ def build_contextual_fallback_question(
         "topic": str(target),
         "expected_concepts": expected
     }
-

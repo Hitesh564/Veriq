@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../utils/supabaseClient";
+import { safeFetch, safeJsonFetch } from "../utils/api";
 
 interface PaymentHistoryItem {
   id: string;
@@ -27,33 +28,24 @@ export default function BillingPage() {
     if (!user) return;
     setLoading(true);
     setError("");
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      // 1. Fetch Subscription status
-      const subRes = await fetch("http://127.0.0.1:8000/api/v1/payments/subscription", {
-        headers: { "Authorization": `Bearer ${session.access_token}` }
-      });
-      if (subRes.ok) {
-        const data = await subRes.json();
-        setSubStatus(data);
-      }
-
-      // 2. Fetch Payment History
-      const histRes = await fetch("http://127.0.0.1:8000/api/v1/payments/history", {
-        headers: { "Authorization": `Bearer ${session.access_token}` }
-      });
-      if (histRes.ok) {
-        const data = await histRes.json();
-        setHistory(data);
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch billing details.");
-    } finally {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
       setLoading(false);
+      return;
     }
+
+    const [subscription, paymentHistory] = await Promise.all([
+      safeJsonFetch<any>("/api/v1/payments/subscription", {
+        headers: { "Authorization": `Bearer ${session.access_token}` }
+      }),
+      safeJsonFetch<PaymentHistoryItem[]>("/api/v1/payments/history", {
+        headers: { "Authorization": `Bearer ${session.access_token}` }
+      })
+    ]);
+
+    if (subscription) setSubStatus(subscription);
+    if (Array.isArray(paymentHistory)) setHistory(paymentHistory);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -67,11 +59,11 @@ export default function BillingPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const res = await fetch("http://127.0.0.1:8000/api/v1/payments/customer-portal", {
+      const res = await safeFetch("/api/v1/payments/customer-portal", {
         method: "POST",
         headers: { "Authorization": `Bearer ${session.access_token}` }
       });
-      if (!res.ok) throw new Error("Could not initialize Stripe Customer Portal.");
+      if (!res || !res.ok) throw new Error("Could not initialize Stripe Customer Portal.");
       const data = await res.json();
       if (data?.url) {
         window.location.href = data.url;
@@ -94,11 +86,11 @@ export default function BillingPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/payments/cancel?subscription_id=${subStatus.subscription_id}`, {
+      const res = await safeFetch(`/api/v1/payments/cancel?subscription_id=${subStatus.subscription_id}`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${session.access_token}` }
       });
-      if (!res.ok) throw new Error("Could not process cancellation.");
+      if (!res || !res.ok) throw new Error("Could not process cancellation.");
       const data = await res.json();
       setSuccess(data.message || "Subscription set to cancel successfully.");
       fetchData();

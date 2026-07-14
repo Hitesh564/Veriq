@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Candidate Dashboard - InterviewIntelligence</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Design System Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed-variant": "#454744",
+                      "on-primary-fixed": "#241a00",
+                      "inverse-on-surface": "#f2f0f0",
+                      "on-secondary-fixed": "#161c22",
+                      "on-tertiary": "#ffffff",
+                      "on-surface": "#1b1c1c",
+                      "surface-container-highest": "#e3e2e2",
+                      "surface-dim": "#dbdad9",
+                      "error-container": "#ffdad6",
+                      "primary": "#735c00",
+                      "tertiary-fixed": "#e3e3de",
+                      "on-secondary-fixed-variant": "#41474e",
+                      "secondary-fixed": "#dde3eb",
+                      "on-primary-fixed-variant": "#574500",
+                      "on-secondary-container": "#5f656c",
+                      "primary-fixed-dim": "#e9c349",
+                      "on-error-container": "#93000a",
+                      "tertiary": "#5d5f5b",
+                      "surface-bright": "#faf9f9",
+                      "primary-container": "#d4af37",
+                      "on-secondary": "#ffffff",
+                      "secondary-fixed-dim": "#c1c7cf",
+                      "on-error": "#ffffff",
+                      "tertiary-fixed-dim": "#c6c7c2",
+                      "on-tertiary-fixed": "#1a1c19",
+                      "on-surface-variant": "#4d4635",
+                      "outline-variant": "#d0c5af",
+                      "error": "#ba1a1a",
+                      "surface-tint": "#735c00",
+                      "primary-fixed": "#ffe088",
+                      "secondary": "#595f66",
+                      "inverse-primary": "#e9c349",
+                      "surface-container": "#efeded",
+                      "tertiary-container": "#b2b3af",
+                      "on-primary-container": "#554300",
+                      "surface-container-high": "#e9e8e8",
+                      "surface-container-low": "#f4f3f3",
+                      "surface-variant": "#e3e2e2",
+                      "secondary-container": "#dde3eb",
+                      "outline": "#7f7663",
+                      "background": "#faf9f9",
+                      "on-tertiary-container": "#444542",
+                      "inverse-surface": "#2f3031",
+                      "surface": "#faf9f9",
+                      "on-background": "#1b1c1c",
+                      "on-primary": "#ffffff",
+                      "surface-container-lowest": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "64px",
+                      "container-max": "1280px",
+                      "unit": "8px",
+                      "gutter": "24px",
+                      "margin-mobile": "20px"
+              },
+              "fontFamily": {
+                      "headline-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "label-caps": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "display-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "display-lg-mobile": [
+                              "Plus Jakarta Sans"
+                      ]
+              },
+              "fontSize": {
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.1em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+            },
+          }
+        }
+    </script>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+        
+        body {
+            background-color: #F5F5F0;
+            color: #1b1c1c; /* on-background */
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .ambient-shadow {
+            box-shadow: 0 10px 30px rgba(47, 53, 59, 0.05);
+        }
+
+        /* Hide scrollbar for clean aesthetic */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        * {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md antialiased min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="bg-surface/50 dark:bg-surface-dim/50 backdrop-blur-xl fixed top-0 w-full border-b border-white/20 shadow-sm z-50">
+<div class="flex justify-between items-center px-margin-desktop h-20 w-full max-w-container-max mx-auto">
+<div class="font-headline-md text-headline-md font-bold text-primary">InterviewIntelligence</div>
+<!-- Navigation Links -->
+<nav class="hidden md:flex items-center space-x-8">
+<a class="text-secondary dark:text-on-surface-variant hover:text-primary transition-colors duration-300 scale-95 transition-transform duration-200" href="#">Dashboard</a>
+<a class="text-secondary dark:text-on-surface-variant hover:text-primary transition-colors duration-300 scale-95 transition-transform duration-200" href="#">Interviews</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1 hover:text-primary transition-colors duration-300 scale-95 transition-transform duration-200" href="#">Talent</a>
+<a class="text-secondary dark:text-on-surface-variant hover:text-primary transition-colors duration-300 scale-95 transition-transform duration-200" href="#">Insights</a>
+<a class="text-secondary dark:text-on-surface-variant hover:text-primary transition-colors duration-300 scale-95 transition-transform duration-200" href="#">Pricing</a>
+</nav>
+<div class="flex items-center space-x-4">
+<button class="text-secondary dark:text-on-surface-variant hover:text-primary transition-colors duration-300 font-label-caps text-label-caps">Log In</button>
+<button class="bg-on-surface text-on-primary px-6 py-2 rounded-full hover:bg-on-surface-variant transition-colors duration-300 font-label-caps text-label-caps">Get Started</button>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-32 pb-24 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto w-full">
+<!-- Header Section -->
+<div class="mb-16">
+<h1 class="font-display-lg text-display-lg text-on-surface mb-2">Candidate Overview</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">A comprehensive analysis of performance, skill mapping, and cognitive alignment for your talent pipeline.</p>
+</div>
+<!-- Grid Layout (Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Readiness Score Card (Spans 4 cols) -->
+<div class="glass-panel ambient-shadow rounded-xl p-8 col-span-1 md:col-span-4 flex flex-col justify-between group hover:backdrop-blur-3xl transition-all duration-500">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-1">Ready for Launch</h2>
+<p class="text-secondary text-sm">Overall competency score</p>
+</div>
+<div class="mt-8 flex items-end gap-4">
+<span class="font-display-lg text-display-lg text-primary-container leading-none">89</span>
+<span class="text-on-surface-variant text-lg pb-1">/ 100</span>
+</div>
+<div class="mt-8 w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full rounded-full" style="width: 89%;"></div>
+</div>
+<div class="mt-6">
+<span class="inline-flex items-center px-3 py-1 rounded-full bg-primary-container/10 text-primary-container font-label-caps text-label-caps">
+<span class="material-symbols-outlined text-[14px] mr-1" style="font-variation-settings: 'FILL' 1;">trending_up</span>
+                        Top 5%
+                    </span>
+</div>
+</div>
+<!-- Profile & Recent Sessions (Spans 8 cols) -->
+<div class="col-span-1 md:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Profile Snippet -->
+<div class="glass-panel ambient-shadow rounded-xl p-8 flex items-center gap-6">
+<img class="w-24 h-24 rounded-full object-cover border-2 border-white/50" data-alt="A professional headshot of a young professional in a modern, well-lit office setting. The lighting is soft and bright, emphasizing a high-end, premium aesthetic. The color palette is composed of warm off-whites, beiges, and deep slate accents, aligning with an airy, editorial style. The subject looks confident and composed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaADwzEONZN7aOHfBxEyfFuJXLVKIIkq7QbNLO7eh4_xILQBgaVYp8dZjTojVtRrtl2BDaYzQOGD8E1pFhd33EU0Z62EMIbM7DEX03ZVl2Y68--Vc4llmT_oQW89SwLShN7PbpDbM5Ip7PGK5DZpcYnOcxXCxOOC5QUJ5AKj7skAw7Jwi3LI7Mkyjtflb3f7AEu5AZZCHH3coTzmjMVX7t15UQYwNDKO7g159q_zjZTVaFvxruVAWXgqS-tdQgd75P_yCCum-jXmrv"/>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Alex Mercer</h3>
+<p class="text-on-surface-variant">Senior Product Designer</p>
+<div class="mt-3 flex gap-2">
+<span class="inline-flex items-center px-3 py-1 rounded-full bg-primary-container/10 text-primary-container font-label-caps text-label-caps text-[10px]">UX/UI</span>
+<span class="inline-flex items-center px-3 py-1 rounded-full bg-primary-container/10 text-primary-container font-label-caps text-label-caps text-[10px]">Strategy</span>
+</div>
+</div>
+</div>
+<!-- Recent Sessions List -->
+<div class="glass-panel ambient-shadow rounded-xl p-8">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-6">Recent Sessions</h2>
+<ul class="space-y-4">
+<li class="flex justify-between items-center pb-4 border-b border-on-surface/5">
+<div>
+<p class="font-bold text-on-surface">Technical Assessment</p>
+<p class="text-sm text-secondary">Oct 12 • 45m</p>
+</div>
+<span class="material-symbols-outlined text-primary-container">play_circle</span>
+</li>
+<li class="flex justify-between items-center">
+<div>
+<p class="font-bold text-on-surface">Cultural Fit Interview</p>
+<p class="text-sm text-secondary">Oct 10 • 30m</p>
+</div>
+<span class="material-symbols-outlined text-primary-container">play_circle</span>
+</li>
+</ul>
+</div>
+</div>
+<!-- Skill Geometry (Radar Chart Placeholder) (Spans 6 cols) -->
+<div class="glass-panel ambient-shadow rounded-xl p-8 col-span-1 md:col-span-6 min-h-[400px] flex flex-col">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-6">Skill Geometry</h2>
+<div class="flex-grow flex items-center justify-center relative">
+<!-- Abstract representation of a radar chart for editorial feel -->
+<div class="absolute inset-0 bg-gradient-to-tr from-surface-container-high/20 to-transparent rounded-full mix-blend-multiply"></div>
+<!-- Decorative SVG replacing complex chart library for this mockup -->
+<svg class="w-64 h-64 text-primary-container opacity-80" fill="none" stroke="currentColor" stroke-width="1.5" viewbox="0 0 200 200">
+<polygon points="100,20 180,60 180,140 100,180 20,140 20,60" stroke="rgba(212, 175, 55, 0.3)"></polygon>
+<polygon fill="rgba(212, 175, 55, 0.1)" points="100,40 160,70 140,130 100,150 50,110 50,60" stroke="currentColor"></polygon>
+<!-- Spokes -->
+<line stroke="rgba(212, 175, 55, 0.3)" stroke-dasharray="2,2" x1="100" x2="100" y1="100" y2="20"></line>
+<line stroke="rgba(212, 175, 55, 0.3)" stroke-dasharray="2,2" x1="100" x2="180" y1="100" y2="60"></line>
+<line stroke="rgba(212, 175, 55, 0.3)" stroke-dasharray="2,2" x1="100" x2="180" y1="100" y2="140"></line>
+<line stroke="rgba(212, 175, 55, 0.3)" stroke-dasharray="2,2" x1="100" x2="100" y1="100" y2="180"></line>
+<line stroke="rgba(212, 175, 55, 0.3)" stroke-dasharray="2,2" x1="100" x2="20" y1="100" y2="140"></line>
+<line stroke="rgba(212, 175, 55, 0.3)" stroke-dasharray="2,2" x1="100" x2="20" y1="100" y2="60"></line>
+<!-- Labels (Abstracted) -->
+<text class="text-[8px] fill-on-surface-variant font-label-caps" x="90" y="15">Design</text>
+<text class="text-[8px] fill-on-surface-variant font-label-caps" x="185" y="65">Proto</text>
+<text class="text-[8px] fill-on-surface-variant font-label-caps" x="185" y="145">Code</text>
+<text class="text-[8px] fill-on-surface-variant font-label-caps" x="90" y="195">Mgmt</text>
+<text class="text-[8px] fill-on-surface-variant font-label-caps" x="0" y="145">Comms</text>
+<text class="text-[8px] fill-on-surface-variant font-label-caps" x="0" y="65">Strat</text>
+</svg>
+</div>
+</div>
+<!-- Cognitive Sync Timeline (Spans 6 cols) -->
+<div class="glass-panel ambient-shadow rounded-xl p-8 col-span-1 md:col-span-6 min-h-[400px] flex flex-col relative overflow-hidden">
+<!-- AI Module Styling Indicator -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-container"></div>
+<div class="flex justify-between items-start mb-8">
+<h2 class="font-headline-md text-headline-md text-on-surface">Cognitive Sync</h2>
+<span class="inline-flex items-center px-3 py-1 rounded-full bg-surface-container-highest text-on-surface font-label-caps text-label-caps text-[10px]">
+<span class="material-symbols-outlined text-[12px] mr-1">auto_awesome</span> AI Analysis
+                    </span>
+</div>
+<div class="relative pl-6 border-l border-on-surface/10 space-y-8 flex-grow">
+<!-- Timeline Item 1 -->
+<div class="relative">
+<div class="absolute -left-[29px] top-1 w-2 h-2 rounded-full bg-primary-container"></div>
+<p class="font-bold text-on-surface text-sm mb-1">High Problem-Solving Adaptability</p>
+<p class="text-on-surface-variant text-sm">Demonstrated rapid context switching during the technical whiteboard session.</p>
+</div>
+<!-- Timeline Item 2 -->
+<div class="relative">
+<div class="absolute -left-[29px] top-1 w-2 h-2 rounded-full bg-surface-container-highest border border-outline"></div>
+<p class="font-bold text-on-surface text-sm mb-1">Empathetic Communication</p>
+<p class="text-on-surface-variant text-sm">Consistent use of inclusive language when discussing past team conflicts.</p>
+</div>
+<!-- Timeline Item 3 -->
+<div class="relative">
+<div class="absolute -left-[29px] top-1 w-2 h-2 rounded-full bg-surface-container-highest border border-outline"></div>
+<p class="font-bold text-on-surface text-sm mb-1">Strategic Foresight</p>
+<p class="text-on-surface-variant text-sm">Anticipated edge cases in system architecture design phase.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-surface-dim w-full py-12 border-t border-outline-variant/10 mt-auto">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-desktop gap-gutter max-w-container-max mx-auto w-full">
+<div class="font-headline-md text-headline-md font-bold text-primary mb-4 md:mb-0">InterviewIntelligence</div>
+<nav class="flex flex-wrap justify-center gap-6">
+<a class="font-label-caps text-label-caps text-on-secondary-container hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">Privacy Policy</a>
+<a class="font-label-caps text-label-caps text-on-secondary-container hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">Terms of Service</a>
+<a class="font-label-caps text-label-caps text-on-secondary-container hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">Cookie Policy</a>
+<a class="font-label-caps text-label-caps text-on-secondary-container hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">Support</a>
+<a class="font-label-caps text-label-caps text-on-secondary-container hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">API Docs</a>
+</nav>
+<div class="font-label-caps text-label-caps text-on-secondary-container mt-4 md:mt-0">
+                © 2024 InterviewIntelligence AI. All rights reserved.
+            </div>
+</div>
+</footer>
+</body></html>

@@ -42,6 +42,20 @@ export default function TextInterviewRoom() {
 
   const { user } = useAuth();
 
+  const isAccessTokenValid = (token?: string): token is string => {
+    return typeof token === "string" && token.split(".").length === 3;
+  };
+
+  const getAuthSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session || !isAccessTokenValid(session.access_token)) {
+      setError("Session expired or invalid. Please sign in again.");
+      await supabase.auth.signOut();
+      return null;
+    }
+    return session;
+  };
+
   useEffect(() => {
     if (!id || !user) return;
 
@@ -49,18 +63,22 @@ export default function TextInterviewRoom() {
 
     const initSession = async () => {
       try {
-        const { data: { session: authSession } } = await supabase.auth.getSession();
-        if (!authSession) {
-          setError("Unauthenticated request");
-          return;
-        }
+        const authSession = await getAuthSession();
+        if (!authSession) return;
 
         const headers = {
           "Authorization": `Bearer ${authSession.access_token}`
         };
 
         const res = await fetch(`http://127.0.0.1:8000/api/v1/interviews/${id}`, { headers });
-        if (!res.ok) throw new Error("Could not fetch interview session.");
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            setError("Authentication failed. Please log in again.");
+            await supabase.auth.signOut();
+          }
+          const body = await res.text();
+          throw new Error(`Failed to load interview session: ${res.status} ${body}`);
+        }
         const data = await res.json();
 
         setRole(data.role);
@@ -157,234 +175,253 @@ export default function TextInterviewRoom() {
     }
   };
 
-  const handleEndEarly = () => {
+  const handleEndEarly = async () => {
     if (wsRef.current) wsRef.current.close();
+    try {
+      const authSession = await getAuthSession();
+      if (authSession) {
+        const headers = {
+          "Authorization": `Bearer ${authSession.access_token}`
+        };
+        await fetch(`http://127.0.0.1:8000/api/v1/interviews/${id}/end`, {
+          method: "POST",
+          headers
+        });
+      }
+    } catch (err) {
+      console.error("Failed to end interview:", err);
+    }
     router.push(`/transcript/${id}`);
   };
 
-  return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#FCFCFD" }}>
-      {/* Center Chat View */}
-      <div style={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        position: "relative",
-        borderRight: isSidePanelOpen ? "1px solid var(--border-main)" : "none"
-      }}>
-        {/* Header bar */}
-        <header style={{
-          height: "64px",
-          borderBottom: "1px solid var(--border-main)",
-          padding: "0 24px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          backgroundColor: "#FFFFFF"
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <h2 style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)" }}>{role}</h2>
-            <span className="badge badge-primary" style={{ textTransform: "capitalize" }}>{difficulty}</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <button
-              onClick={() => router.push(`/interview/${id}/voice`)}
-              className="btn btn-secondary"
-              style={{ padding: "6px 12px", fontSize: "0.8rem" }}
-            >
-              🎙️ Switch to Voice
-            </button>
-            <button
-              onClick={() => setIsSidePanelOpen(!isSidePanelOpen)}
-              className="btn btn-secondary"
-              style={{ padding: "6px 10px", display: "flex", alignItems: "center" }}
-            >
-              {isSidePanelOpen ? "Hide Progress" : "Show Progress"}
-            </button>
-          </div>
-        </header>
-
-        {/* Chat Thread */}
+    return (
+      <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--bg-main)" }}>
+        {/* Center Chat View */}
         <div style={{
           flex: 1,
-          overflowY: "auto",
-          padding: "32px 24px",
           display: "flex",
           flexDirection: "column",
-          gap: "24px"
+          height: "100vh",
+          position: "relative",
+          borderRight: isSidePanelOpen ? "1px solid var(--border-subtle)" : "none"
         }}>
-          {messages.length === 0 && (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1, color: "var(--text-muted)", fontSize: "0.9rem" }}>
-              Connecting to mock environment...
+          {/* Header bar */}
+          <header style={{
+            height: "64px",
+            borderBottom: "1px solid var(--border-subtle)",
+            padding: "0 24px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            backgroundColor: "rgba(255, 253, 249, 0.84)"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <h2 style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)" }}>{role}</h2>
+              <span className="badge badge-primary" style={{ textTransform: "capitalize" }}>{difficulty}</span>
             </div>
-          )}
-
-          {messages.map((msg, index) => {
-            const isInterviewer = msg.sender === "interviewer";
-            return (
-              <div
-                key={index}
-                style={{
-                  display: "flex",
-                  justifyContent: isInterviewer ? "flex-start" : "flex-end",
-                  width: "100%"
-                }}
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <button
+                onClick={() => router.push(`/interview/${id}/voice`)}
+                className="btn btn-secondary"
+                style={{ padding: "6px 12px", fontSize: "0.8rem" }}
               >
-                <div style={{
-                  maxWidth: "600px",
-                  backgroundColor: isInterviewer ? "#FFFFFF" : "#EFF6FF",
-                  border: isInterviewer ? "1px solid var(--border-main)" : "1px solid #BFDBFE",
-                  padding: "16px 20px",
-                  borderRadius: "12px",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.02)"
-                }}>
+                🎙️ Switch to Voice
+              </button>
+              <button
+                onClick={() => setIsSidePanelOpen(!isSidePanelOpen)}
+                className="btn btn-secondary"
+                style={{ padding: "6px 10px", display: "flex", alignItems: "center" }}
+              >
+                {isSidePanelOpen ? "Hide Progress" : "Show Progress"}
+              </button>
+            </div>
+          </header>
+
+          {/* Chat Thread */}
+          <div style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: "32px 24px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "24px"
+          }}>
+            {messages.length === 0 && (
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1, color: "var(--text-muted)", fontSize: "0.9rem" }}>
+                Connecting to mock environment...
+              </div>
+            )}
+
+            {messages.map((msg, index) => {
+              const isInterviewer = msg.sender === "interviewer";
+              return (
+                <div
+                  key={index}
+                  style={{
+                    display: "flex",
+                    justifyContent: isInterviewer ? "flex-start" : "flex-end",
+                    width: "100%"
+                  }}
+                >
                   <div style={{
-                    fontSize: "0.75rem",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    color: isInterviewer ? "#3B82F6" : "#2563EB",
-                    marginBottom: "6px"
+                    maxWidth: "600px",
+                    backgroundColor: isInterviewer ? "rgba(255, 255, 255, 0.82)" : "rgba(213, 173, 52, 0.12)",
+                    border: "1px solid var(--border-subtle)",
+                    padding: "16px 20px",
+                    borderRadius: "16px",
+                    boxShadow: "0 10px 24px rgba(49, 34, 9, 0.04)"
                   }}>
-                    {isInterviewer ? "Interviewer" : "You (Candidate)"}
+                    <div style={{
+                      fontSize: "0.75rem",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      color: isInterviewer ? "var(--color-accent)" : "var(--color-primary)",
+                      marginBottom: "6px",
+                      fontFamily: "var(--font-mono)"
+                    }}>
+                      {isInterviewer ? "Interviewer" : "You (Candidate)"}
+                    </div>
+                    <p style={{
+                      fontSize: "0.95rem",
+                      color: "var(--text-primary)",
+                      lineHeight: "1.5",
+                      whiteSpace: "pre-line"
+                    }}>
+                      {msg.text}
+                    </p>
                   </div>
-                  <p style={{
-                    fontSize: "0.95rem",
-                    color: "var(--text-primary)",
-                    lineHeight: "1.5",
-                    whiteSpace: "pre-line"
-                  }}>
-                    {msg.text}
-                  </p>
+                </div>
+              );
+            })}
+
+            {isWaiting && (
+              <div style={{ display: "flex", justifyContent: "flex-start", width: "100%" }}>
+              <div style={{
+                  backgroundColor: "rgba(255, 253, 249, 0.92)",
+                  border: "1px solid var(--border-subtle)",
+                  padding: "12px 18px",
+                  borderRadius: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  color: "var(--text-muted)"
+                }}>
+                  <span className="typing-dot" />
+                  <span className="typing-dot" />
+                  <span className="typing-dot" />
+                  <span style={{ fontSize: "0.85rem", marginLeft: "4px" }}>AI Coach is reviewing your response...</span>
                 </div>
               </div>
-            );
-          })}
+            )}
 
-          {isWaiting && (
-            <div style={{ display: "flex", justifyContent: "flex-start", width: "100%" }}>
-              <div style={{
-                backgroundColor: "#FFFFFF",
-                border: "1px solid var(--border-main)",
-                padding: "12px 18px",
-                borderRadius: "12px",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                color: "var(--text-muted)"
-              }}>
-                <span className="typing-dot" />
-                <span className="typing-dot" />
-                <span className="typing-dot" />
-                <span style={{ fontSize: "0.85rem", marginLeft: "4px" }}>AI Coach is reviewing your response...</span>
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Bottom Input Panel */}
+          <div style={{
+            padding: "24px",
+            backgroundColor: "rgba(255, 253, 249, 0.84)",
+            borderTop: "1px solid var(--border-subtle)"
+          }}>
+            <form onSubmit={handleSend} style={{ display: "flex", gap: "12px", maxWidth: "800px", margin: "0 auto" }}>
+              <input
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder={isWaiting ? "Reviewing..." : "Type your answer and press Send..."}
+                disabled={isWaiting || status === "completed"}
+                style={{
+                  flex: 1,
+                  padding: "14px 18px",
+                  borderRadius: "14px",
+                  border: "1px solid var(--border-subtle)",
+                  background: "rgba(255, 255, 255, 0.8)",
+                  color: "var(--text-primary)",
+                  fontSize: "0.95rem"
+                }}
+              />
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isWaiting || !inputText.trim() || status === "completed"}
+                style={{ padding: "0 24px" }}
+              >
+                Send Response
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Sidebar Progress Panel (Collapsible) */}
+        {isSidePanelOpen && (
+          <aside style={{
+            width: "280px",
+            backgroundColor: "rgba(255, 253, 249, 0.8)",
+            borderLeft: "1px solid var(--border-subtle)",
+            height: "100vh",
+            padding: "32px 24px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "32px",
+            position: "sticky",
+            top: 0
+          }}>
+            {/* Progress Circle & Text */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <h3 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                Progress
+              </h3>
+              <div style={{ fontSize: "1.8rem", fontWeight: 800, fontFamily: "var(--font-mono)", color: "var(--text-primary)" }}>
+                {questionCount} <span style={{ fontSize: "1rem", fontWeight: 500, color: "var(--text-muted)" }}>/ {maxQuestionCount} Qs</span>
+              </div>
+              <div style={{ width: "100%", height: "6px", borderRadius: "3px", backgroundColor: "rgba(28, 23, 18, 0.08)", overflow: "hidden" }}>
+                <div style={{
+                  width: `${(questionCount / maxQuestionCount) * 100}%`,
+                  height: "100%",
+                  backgroundColor: "var(--color-primary)",
+                  transition: "width 0.3s ease"
+                }} />
               </div>
             </div>
-          )}
 
-          <div ref={chatEndRef} />
-        </div>
+            {/* Current Phase */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <h3 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                Current Phase
+              </h3>
+              <span className="badge badge-primary" style={{
+                alignSelf: "flex-start",
+                textTransform: "uppercase",
+                fontSize: "0.8rem",
+                padding: "6px 12px",
+                fontFamily: "var(--font-mono)"
+              }}>
+                {phase.replace("_", " ")}
+              </span>
+            </div>
 
-        {/* Bottom Input Panel */}
-        <div style={{
-          padding: "24px",
-          backgroundColor: "#FFFFFF",
-          borderTop: "1px solid var(--border-main)"
-        }}>
-          <form onSubmit={handleSend} style={{ display: "flex", gap: "12px", maxWidth: "800px", margin: "0 auto" }}>
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder={isWaiting ? "Reviewing..." : "Type your answer and press Send..."}
-              disabled={isWaiting || status === "completed"}
-              style={{
-                flex: 1,
-                padding: "14px 18px",
-                borderRadius: "10px",
-                border: "1px solid var(--border-main)",
-                fontSize: "0.95rem"
-              }}
-            />
+            {/* Time Remaining */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <h3 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                Time Remaining
+              </h3>
+              <div style={{ fontSize: "1.1rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                ~{Math.max(1, Math.round((maxQuestionCount - questionCount) * 1.5))} Mins Remaining
+              </div>
+            </div>
+
+            <div style={{ flex: 1 }} />
+
+            {/* Action buttons */}
             <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isWaiting || !inputText.trim() || status === "completed"}
-              style={{ padding: "0 24px" }}
+              onClick={handleEndEarly}
+              className="btn btn-secondary"
+              style={{ width: "100%", border: "1px solid rgba(239, 68, 68, 0.28)", color: "#b42318", background: "rgba(239, 68, 68, 0.07)" }}
             >
-              Send Response
+              End Interview Early
             </button>
-          </form>
-        </div>
-      </div>
-
-      {/* Sidebar Progress Panel (Collapsible) */}
-      {isSidePanelOpen && (
-        <aside style={{
-          width: "280px",
-          backgroundColor: "#FFFFFF",
-          height: "100vh",
-          padding: "32px 24px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "32px",
-          position: "sticky",
-          top: 0
-        }}>
-          {/* Progress Circle & Text */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <h3 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)" }}>
-              Progress
-            </h3>
-            <div style={{ fontSize: "1.8rem", fontWeight: 800, fontFamily: "var(--font-outfit)" }}>
-              {questionCount} <span style={{ fontSize: "1rem", fontWeight: 500, color: "var(--text-muted)" }}>/ {maxQuestionCount} Qs</span>
-            </div>
-            <div style={{ width: "100%", height: "6px", borderRadius: "3px", backgroundColor: "#E4E7EC", overflow: "hidden" }}>
-              <div style={{
-                width: `${(questionCount / maxQuestionCount) * 100}%`,
-                height: "100%",
-                backgroundColor: "#3B82F6",
-                transition: "width 0.3s ease"
-              }} />
-            </div>
-          </div>
-
-          {/* Current Phase */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <h3 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)" }}>
-              Current Phase
-            </h3>
-            <span className="badge badge-primary" style={{
-              alignSelf: "flex-start",
-              textTransform: "uppercase",
-              fontSize: "0.8rem",
-              padding: "6px 12px"
-            }}>
-              {phase.replace("_", " ")}
-            </span>
-          </div>
-
-          {/* Time Remaining */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <h3 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)" }}>
-              Time Remaining
-            </h3>
-            <div style={{ fontSize: "1.1rem", fontWeight: 600 }}>
-              ~{Math.max(1, Math.round((maxQuestionCount - questionCount) * 1.5))} Mins Remaining
-            </div>
-          </div>
-
-          <div style={{ flex: 1 }} />
-
-          {/* Action buttons */}
-          <button
-            onClick={handleEndEarly}
-            className="btn btn-secondary"
-            style={{ width: "100%", border: "1px solid #FCA5A5", color: "#EF4444" }}
-          >
-            End Interview Early
-          </button>
-        </aside>
-      )}
+          </aside>
+        )}
 
       <style jsx>{`
         .typing-dot {

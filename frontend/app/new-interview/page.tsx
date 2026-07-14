@@ -4,10 +4,12 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../utils/supabaseClient";
+import { safeFetch, safeJsonFetch } from "../utils/api";
 
 export default function NewInterviewWizard() {
   const router = useRouter();
   const { user, triggerAuthGuard } = useAuth();
+  const PREPARE_INTERVIEW_TIMEOUT_MS = 60000;
   
   // Wizard States
   const [step, setStep] = useState(1);
@@ -22,20 +24,15 @@ export default function NewInterviewWizard() {
     if (!user) return;
     
     const fetchCredits = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-        const res = await fetch("http://127.0.0.1:8000/api/v1/payments/subscription", {
-          headers: {
-            "Authorization": `Bearer ${session.access_token}`
-          }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setCredits(data);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const data = await safeJsonFetch<any>("/api/v1/payments/subscription", {
+        headers: {
+          "Authorization": `Bearer ${session.access_token}`
         }
-      } catch (err) {
-        console.error(err);
+      });
+      if (data) {
+        setCredits(data);
       }
     };
     fetchCredits();
@@ -45,13 +42,13 @@ export default function NewInterviewWizard() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const res = await fetch("http://127.0.0.1:8000/api/v1/payments/create-checkout-session?plan_id=pro", {
+      const res = await safeFetch("/api/v1/payments/create-checkout-session?plan_id=pro", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${session.access_token}`
         }
       });
-      if (res.ok) {
+      if (res?.ok) {
         const { url } = await res.json();
         if (url) {
           window.location.href = url;
@@ -109,12 +106,12 @@ export default function NewInterviewWizard() {
     formData.append("file", file);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/v1/interviews/parse-file", {
+      const res = await safeFetch("/api/v1/interviews/parse-file", {
         method: "POST",
         body: formData
       });
 
-      if (!res.ok) throw new Error("Failed to parse file.");
+      if (!res || !res.ok) throw new Error("Failed to parse file.");
       const data = await res.json();
 
       if (type === "resume") {
@@ -146,7 +143,7 @@ export default function NewInterviewWizard() {
       setError("");
 
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/v1/interviews/prepare-interview", {
+        const res = await safeFetch("/api/v1/interviews/prepare-interview", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -161,22 +158,22 @@ export default function NewInterviewWizard() {
             jd_text: (mode === "jd" || mode === "resume_jd") ? jdText : null,
             company_name: company === "Custom" ? customCompany : company
           })
-        });
+        }, PREPARE_INTERVIEW_TIMEOUT_MS);
 
-        if (!res.ok) {
+        if (!res || !res.ok) {
           let backendDetail = "";
           try {
-            const errorData = await res.json();
+            const errorData = res ? await res.json() : null;
             backendDetail = errorData?.detail || errorData?.message || "";
           } catch {
             try {
-              backendDetail = await res.text();
+              backendDetail = res ? await res.text() : "";
             } catch {
               backendDetail = "";
             }
           }
 
-          const statusLabel = `${res.status} ${res.statusText}`.trim();
+          const statusLabel = res ? `${res.status} ${res.statusText}`.trim() : "Network unavailable";
           throw new Error(
             backendDetail
               ? `Failed to prepare interview blueprint (${statusLabel}): ${backendDetail}`
@@ -220,7 +217,7 @@ export default function NewInterviewWizard() {
         left: "5%",
         right: "5%",
         height: "2px",
-        backgroundColor: "#E4E7EC",
+        backgroundColor: "var(--border-subtle)",
         zIndex: 0
       }} />
       <div style={{
@@ -229,7 +226,7 @@ export default function NewInterviewWizard() {
         left: "5%",
         width: `${((step - 1) / 3) * 90}%`,
         height: "2px",
-        backgroundColor: "#3B82F6",
+        backgroundColor: "var(--color-primary)",
         transition: "width 0.3s ease",
         zIndex: 0
       }} />
@@ -248,15 +245,16 @@ export default function NewInterviewWizard() {
               width: "32px",
               height: "32px",
               borderRadius: "50%",
-              backgroundColor: isCompleted ? "#3B82F6" : isCurrent ? "#FFFFFF" : "#FFFFFF",
-              border: isCurrent ? "2px solid #3B82F6" : isCompleted ? "2px solid #3B82F6" : "2px solid #E4E7EC",
-              color: isCompleted ? "#FFFFFF" : isCurrent ? "#3B82F6" : "var(--text-muted)",
+              backgroundColor: isCompleted ? "var(--color-primary)" : isCurrent ? "var(--bg-main)" : "var(--bg-main)",
+              border: isCurrent ? "2px solid var(--color-primary)" : isCompleted ? "2px solid var(--color-primary)" : "2px solid var(--border-subtle)",
+              color: isCompleted ? "#FFFFFF" : isCurrent ? "var(--color-primary)" : "var(--text-muted)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               fontWeight: 700,
               fontSize: "0.85rem",
-              transition: "all 0.2s ease"
+              transition: "all 0.2s ease",
+              fontFamily: "var(--font-mono)"
             }}>
               {isCompleted ? "✓" : s.num}
             </div>
@@ -264,7 +262,7 @@ export default function NewInterviewWizard() {
               marginTop: "8px",
               fontSize: "0.8rem",
               fontWeight: isCurrent || isCompleted ? 600 : 500,
-              color: isCurrent ? "#3B82F6" : isCompleted ? "var(--text-primary)" : "var(--text-muted)"
+              color: isCurrent ? "var(--color-primary)" : isCompleted ? "var(--text-primary)" : "var(--text-muted)"
             }}>
               {s.label}
             </span>
@@ -286,9 +284,9 @@ export default function NewInterviewWizard() {
         </p>
         
         <div style={{
-          backgroundColor: "#F8FAFC",
+          backgroundColor: "rgba(255, 255, 255, 0.02)",
           borderRadius: "12px",
-          border: "1px solid #E2E8F0",
+          border: "1px solid var(--border-subtle)",
           padding: "24px",
           marginBottom: "32px",
           textAlign: "left"
@@ -374,19 +372,19 @@ export default function NewInterviewWizard() {
                     key={m.id}
                     onClick={() => setMode(m.id)}
                     style={{
-                      border: isSelected ? "2px solid #3B82F6" : "1px solid var(--border-main)",
+                      border: isSelected ? "2px solid var(--color-primary)" : "1px solid var(--border-subtle)",
                       borderRadius: "12px",
                       padding: "20px",
                       cursor: "pointer",
-                      backgroundColor: isSelected ? "#F0F6FF" : "transparent",
+                      backgroundColor: isSelected ? "rgba(213, 173, 52, 0.12)" : "transparent",
                       transition: "all 0.15s ease"
                     }}
                   >
                     <div style={{ fontSize: "1.8rem", marginBottom: "12px" }}>{m.icon}</div>
-                    <h3 style={{ fontSize: "1rem", fontWeight: 700, color: isSelected ? "#1D4ED8" : "var(--text-primary)", marginBottom: "4px" }}>
+                    <h3 style={{ fontSize: "1rem", fontWeight: 700, color: isSelected ? "var(--color-primary)" : "var(--text-primary)", marginBottom: "4px" }}>
                       {m.title}
                     </h3>
-                    <p style={{ fontSize: "0.8rem", color: isSelected ? "#2563EB" : "var(--text-secondary)", lineHeight: "1.4" }}>
+                    <p style={{ fontSize: "0.8rem", color: isSelected ? "var(--text-accent)" : "var(--text-secondary)", lineHeight: "1.4" }}>
                       {m.desc}
                     </p>
                   </div>
@@ -427,7 +425,7 @@ export default function NewInterviewWizard() {
                     borderRadius: "8px",
                     padding: "20px",
                     textAlign: "center",
-                    backgroundColor: "#FCFCFD",
+                    backgroundColor: "rgba(255, 255, 255, 0.82)",
                     position: "relative"
                   }}>
                     {parsingResume ? (
@@ -446,7 +444,7 @@ export default function NewInterviewWizard() {
                           onChange={(e) => handleFileUpload(e, "resume")}
                           style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }}
                         />
-                        <span style={{ fontSize: "0.85rem", color: "#3B82F6", fontWeight: 600 }}>Upload File</span>
+                        <span style={{ fontSize: "0.85rem", color: "var(--color-primary)", fontWeight: 600 }}>Upload File</span>
                         <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginLeft: "4px" }}>or drag it here</span>
                       </div>
                     )}
@@ -463,7 +461,7 @@ export default function NewInterviewWizard() {
                     borderRadius: "8px",
                     padding: "20px",
                     textAlign: "center",
-                    backgroundColor: "#FCFCFD",
+                    backgroundColor: "rgba(255, 255, 255, 0.82)",
                     position: "relative"
                   }}>
                     {parsingJd ? (
@@ -482,7 +480,7 @@ export default function NewInterviewWizard() {
                           onChange={(e) => handleFileUpload(e, "jd")}
                           style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }}
                         />
-                        <span style={{ fontSize: "0.85rem", color: "#3B82F6", fontWeight: 600 }}>Upload File</span>
+                        <span style={{ fontSize: "0.85rem", color: "var(--color-primary)", fontWeight: 600 }}>Upload File</span>
                         <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginLeft: "4px" }}>or drag it here</span>
                       </div>
                     )}
@@ -599,7 +597,7 @@ export default function NewInterviewWizard() {
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               {/* Gap Analysis Summary */}
               {preparedSession.gap_analysis_json && (
-                <div style={{ padding: "16px", borderRadius: "12px", border: "1px solid var(--border-main)", backgroundColor: "#FCFCFD" }}>
+                <div style={{ padding: "16px", borderRadius: "12px", border: "1px solid var(--border-subtle)", backgroundColor: "rgba(255, 255, 255, 0.82)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                     <h3 style={{ fontSize: "0.95rem", fontWeight: 700 }}>Job-Specific Readiness</h3>
                     {(() => {
@@ -607,7 +605,7 @@ export default function NewInterviewWizard() {
                       const readiness = gap.job_readiness || {};
                       const score = readiness.estimated_readiness_score || 0;
                       return (
-                        <span className={`badge ${score >= 70 ? 'badge-success' : 'badge-warning'}`}>
+                        <span className={`badge ${score >= 70 ? 'badge-success' : 'badge-warning'}`} style={{ fontFamily: "var(--font-mono)" }}>
                           {score}% Ready
                         </span>
                       );
@@ -637,12 +635,12 @@ export default function NewInterviewWizard() {
                       return (
                         <>
                           {mustList.map((obj) => (
-                            <span key={obj} className="badge badge-primary">
+                            <span key={obj} className="badge badge-primary" style={{ fontFamily: "var(--font-mono)" }}>
                               Must: {obj}
                             </span>
                           ))}
                           {niceList.map((obj) => (
-                            <span key={obj} className="badge badge-primary" style={{ backgroundColor: "#F0Fdf4", color: "#16a34a" }}>
+                            <span key={obj} className="badge" style={{ backgroundColor: "rgba(16, 185, 129, 0.12)", color: "var(--color-success)", fontFamily: "var(--font-mono)" }}>
                               Nice: {obj}
                             </span>
                           ))}
@@ -660,7 +658,7 @@ export default function NewInterviewWizard() {
                 gap: "12px",
                 padding: "16px",
                 borderRadius: "8px",
-                backgroundColor: "#F8F9FA",
+                backgroundColor: "rgba(255, 255, 255, 0.82)",
                 fontSize: "0.8rem"
               }}>
                 <div>

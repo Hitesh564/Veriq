@@ -1,12 +1,15 @@
 import os
 import json
 import time
+import asyncio
 from typing import Dict, Any, List, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from app.config import GEMINI_API_KEY
 from app.models.profile import CandidateProfile, JobProfile, GapAnalysis, CompanyProfile
 from app.services.cache import comp_cache, hash_text
+
+LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", "25"))
 
 
 async def build_candidate_profile(resume_text: str) -> CandidateProfile:
@@ -59,7 +62,10 @@ async def build_candidate_profile(resume_text: str) -> CandidateProfile:
             "}"
         )
         
-        response = await llm.ainvoke([SystemMessage(content=prompt)])
+        response = await asyncio.wait_for(
+            llm.ainvoke([SystemMessage(content=prompt)]),
+            timeout=LLM_TIMEOUT_SECONDS,
+        )
         data = json.loads(response.content.strip())
         profile = CandidateProfile(**data)
         
@@ -111,7 +117,10 @@ async def build_job_profile(jd_text: str) -> JobProfile:
             "}"
         )
         
-        response = await llm.ainvoke([SystemMessage(content=prompt)])
+        response = await asyncio.wait_for(
+            llm.ainvoke([SystemMessage(content=prompt)]),
+            timeout=LLM_TIMEOUT_SECONDS,
+        )
         data = json.loads(response.content.strip())
         profile = JobProfile(**data)
         
@@ -181,7 +190,10 @@ async def build_gap_analysis(cand: CandidateProfile, job: JobProfile) -> GapAnal
             "}"
         )
         
-        response = await llm.ainvoke([SystemMessage(content=prompt)])
+        response = await asyncio.wait_for(
+            llm.ainvoke([SystemMessage(content=prompt)]),
+            timeout=LLM_TIMEOUT_SECONDS,
+        )
         data = json.loads(response.content.strip())
         gap = GapAnalysis(**data)
         

@@ -17,6 +17,19 @@ export default function VoiceInterviewRoom() {
   const id = params.id as string;
   const { user } = useAuth();
 
+  const isAccessTokenValid = (token?: string): token is string => {
+    return typeof token === "string" && token.split(".").length === 3;
+  };
+
+  const getAuthSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session || !isAccessTokenValid(session.access_token)) {
+      setError("Session expired or invalid. Please sign in again.");
+      await supabase.auth.signOut();
+      return null;
+    }
+    return session;
+  };
 
 
   // States
@@ -129,41 +142,51 @@ export default function VoiceInterviewRoom() {
   useEffect(() => {
     if (!id || !user) return;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) return;
-      fetch(`http://127.0.0.1:8000/api/v1/interviews/${id}`, {
-        headers: {
-          "Authorization": `Bearer ${session.access_token}`
-        }
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error("Could not fetch interview session.");
-          return res.json();
-        })
-        .then((data) => {
-          setRole(data.role);
-          setDifficulty(data.difficulty);
-          setQuestionCount(data.question_count);
-          setMaxQuestionCount(data.max_question_count);
-          setStatus(data.status);
-          setCurrentQuestion(data.current_question || "");
-          setPhase(data.interview_phase || "INTRODUCTION");
+    const initSession = async () => {
+      try {
+        const authSession = await getAuthSession();
+        if (!authSession) return;
 
-          const history: ChatMessage[] = data.transcripts.map((t: any) => ({
-            sender: t.sender,
-            text: t.text,
-            timestamp: new Date(t.timestamp)
-          }));
-          setMessages(history);
-
-          if (data.status === "completed") {
-            router.push(`/transcript/${id}`);
+        const res = await fetch(`http://127.0.0.1:8000/api/v1/interviews/${id}`, {
+          headers: {
+            "Authorization": `Bearer ${authSession.access_token}`
           }
-        })
-        .catch((err) => {
-          setError(err.message || "Failed to initialize voice room");
         });
-    });
+
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            setError("Authentication failed. Please log in again.");
+            await supabase.auth.signOut();
+          }
+          const body = await res.text();
+          throw new Error(`Could not fetch interview session: ${res.status} ${body}`);
+        }
+
+        const data = await res.json();
+        setRole(data.role);
+        setDifficulty(data.difficulty);
+        setQuestionCount(data.question_count);
+        setMaxQuestionCount(data.max_question_count);
+        setStatus(data.status);
+        setCurrentQuestion(data.current_question || "");
+        setPhase(data.interview_phase || "INTRODUCTION");
+
+        const history: ChatMessage[] = data.transcripts.map((t: any) => ({
+          sender: t.sender,
+          text: t.text,
+          timestamp: new Date(t.timestamp)
+        }));
+        setMessages(history);
+
+        if (data.status === "completed") {
+          router.push(`/transcript/${id}`);
+        }
+      } catch (err: any) {
+        setError(err.message || "Failed to initialize voice room");
+      }
+    };
+
+    initSession();
   }, [id, user]);
 
   // Duration Timer
@@ -414,8 +437,9 @@ export default function VoiceInterviewRoom() {
       }
 
       // 2. Setup WebSocket and register all handlers immediately
-      const { data: { session } } = await supabase.auth.getSession();
-      const tokenParam = session ? `?token=${session.access_token}` : "";
+      const session = await getAuthSession();
+      if (!session) return;
+      const tokenParam = `?token=${session.access_token}`;
       const wsUrl = `ws://127.0.0.1:8000/api/voice/interview/${id}${tokenParam}`;
       const ws = new WebSocket(wsUrl);
       geminiWsRef.current = ws;
@@ -605,217 +629,188 @@ export default function VoiceInterviewRoom() {
 
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(true);
 
+  const renderOrb = () => {
+    let orbBg = "#E4E7EC";
+    let rippleColor = "transparent";
+    let statusText = "Initializing...";
+    let isPulsing = false;
+    let isThinking = false;
+
+    switch (voiceState) {
+      case "DISCONNECTED":
+        statusText = "Microphone Disconnected";
+        break;
+      case "CONNECTING":
+        statusText = "Connecting audio stream...";
+        isPulsing = true;
+        break;
+      case "LISTENING":
+        orbBg = "#10B981"; 
+        rippleColor = "rgba(16, 185, 129, 0.4)";
+        statusText = "Listening to you speak...";
+        isPulsing = true;
+        break;
+      case "TRANSCRIBING":
+      case "THINKING":
+        orbBg = "#2563EB"; 
+        statusText = "Transcribing response...";
+        isThinking = true;
+        break;
+      case "AI_SPEAKING":
+        orbBg = "#2563EB"; 
+        rippleColor = "rgba(37, 99, 235, 0.4)";
+        statusText = "AI Coach is speaking...";
+        isPulsing = true;
+        break;
+      case "ENDED":
+        statusText = "Session ended";
+        break;
+    }
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
+        <div style={{
+          position: "relative",
+          width: "160px",
+          height: "160px",
+          borderRadius: "50%",
+          backgroundColor: orbBg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: isPulsing ? "0 0 40px " + rippleColor : "none",
+          transition: "all 0.3s ease-in-out"
+        }}>
+          {isPulsing && (
+            <div style={{
+              position: "absolute",
+              inset: "-12px",
+              borderRadius: "50%",
+              border: `2px solid ${orbBg}`,
+              animation: "ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite",
+              opacity: 0.6
+            }} />
+          )}
+          {isThinking && (
+            <div style={{
+              position: "absolute",
+              inset: "-12px",
+              borderRadius: "50%",
+              border: `3px dashed ${orbBg}`,
+              animation: "rotate-slow 4s linear infinite"
+            }} />
+          )}
+          <span style={{ fontSize: "3rem" }}>
+            {voiceState === "DISCONNECTED" ? "🔇" : "🎙️"}
+          </span>
+        </div>
+        
+        <div style={{ textAlign: "center" }}>
+          <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text-primary)" }}>
+            {statusText}
+          </h3>
+          <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "4px" }}>
+            {voiceState === "LISTENING" && "Speak clearly into your microphone"}
+            {voiceState === "AI_SPEAKING" && "Listen to the follow-up question"}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#FCFCFD" }}>
-      {/* Main Focus Panel */}
-      <div style={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        position: "relative",
-        borderRight: isSidePanelOpen ? "1px solid var(--border-main)" : "none"
-      }}>
-        {/* Header Bar */}
+    <div className="voice-room-container">
+      
+      {/* 1. LEFT COLUMN: Live Dialogue Transcript */}
+      <div className="voice-left-col">
+        <h3 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)", paddingBottom: "16px", borderBottom: "1px solid var(--border-subtle)", marginBottom: "20px", fontFamily: "var(--font-mono)" }}>
+          Dialogue Transcript
+        </h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px", flex: 1, overflowY: "auto", paddingRight: "8px" }}>
+          {messages.length === 0 && !liveTranscript && !correctedTranscript ? (
+            <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", textAlign: "center", marginTop: "40px" }}>
+              Dialogue will stream here once speech starts.
+            </p>
+          ) : (
+            <>
+              {messages.map((m, index) => (
+                <div 
+                  key={index} 
+                  style={{ 
+                    padding: "12px", 
+                    borderRadius: "12px", 
+                    backgroundColor: m.sender === "interviewer" ? "rgba(255, 255, 255, 0.84)" : "rgba(213, 173, 52, 0.1)",
+                    borderLeft: m.sender === "interviewer" ? "3px solid var(--color-primary)" : "3px solid var(--color-success)",
+                    border: "1px solid var(--border-subtle)"
+                  }}
+                >
+                  <span style={{ fontSize: "10px", fontWeight: 700, color: m.sender === "interviewer" ? "var(--color-primary)" : "var(--color-success)", display: "block", marginBottom: "4px", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
+                    {m.sender === "interviewer" ? "Interviewer" : "You"}
+                  </span>
+                  <p style={{ fontSize: "0.9rem", lineHeight: "1.4", color: "var(--text-primary)" }}>{m.text}</p>
+                </div>
+              ))}
+              {liveTranscript && (
+                <div className="active-speaker-glow" style={{ padding: "12px", borderRadius: "12px", background: "rgba(6, 182, 212, 0.08)", border: "1px solid var(--border-subtle)" }}>
+                  <span style={{ fontSize: "10px", fontWeight: 700, color: "var(--color-accent)", display: "block", marginBottom: "4px", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>You (Speaking...)</span>
+                  <p style={{ fontSize: "0.9rem", fontStyle: "italic", color: "var(--text-secondary)" }}>"{liveTranscript}"</p>
+                </div>
+              )}
+              {correctedTranscript && (
+                <div style={{ padding: "12px", borderRadius: "12px", background: "rgba(16, 185, 129, 0.08)", border: "1px solid var(--border-subtle)" }}>
+                  <span style={{ fontSize: "10px", fontWeight: 700, color: "var(--color-success)", display: "block", marginBottom: "4px", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>You (Processed)</span>
+                  <p style={{ fontSize: "0.9rem", color: "var(--text-primary)" }}>"{correctedTranscript}"</p>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* 2. CENTER COLUMN: Interactive Visualizer & Controls */}
+      <div className="voice-center-col">
+        {/* Header */}
         <header style={{
           height: "64px",
-          borderBottom: "1px solid var(--border-main)",
+          borderBottom: "1px solid var(--border-subtle)",
           padding: "0 24px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          backgroundColor: "#FFFFFF"
+          backgroundColor: "rgba(255, 253, 249, 0.84)"
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <h2 style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)" }}>{role} (Voice Mode)</h2>
-            <span className="badge badge-primary" style={{ textTransform: "capitalize" }}>{difficulty}</span>
+            <h2 style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)" }}>{role}</h2>
+            <span className="badge badge-primary" style={{ textTransform: "uppercase" }}>{difficulty}</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <button
-              onClick={switchToTextMode}
-              className="btn btn-secondary"
-              style={{ padding: "6px 12px", fontSize: "0.8rem" }}
-            >
-              💬 Switch to Text
-            </button>
-            <button
-              onClick={() => setIsSidePanelOpen(!isSidePanelOpen)}
-              className="btn btn-secondary"
-              style={{ padding: "6px 10px", display: "flex", alignItems: "center" }}
-            >
-              {isSidePanelOpen ? "Hide Progress" : "Show Progress"}
-            </button>
-          </div>
+          <button
+            onClick={switchToTextMode}
+            className="btn btn-secondary"
+            style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+          >
+            💬 Switch to Text
+          </button>
         </header>
 
-        {/* Focus Area */}
-        <div style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: "40px",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: "32px",
-          maxWidth: "800px",
-          margin: "0 auto",
-          width: "100%"
-        }}>
-          {error && (
-            <div style={{
-              backgroundColor: "#FEF2F2",
-              border: "1px solid #FCA5A5",
-              color: "#991B1B",
-              padding: "12px 16px",
-              borderRadius: "8px",
-              width: "100%"
-            }}>
+        {/* Focus visualizer */}
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {error ? (
+          <div style={{ backgroundColor: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.24)", color: "var(--color-error)", padding: "16px", borderRadius: "12px", maxWidth: "480px" }}>
               {error}
             </div>
+          ) : (
+            renderOrb()
           )}
-
-          {/* Waveform & Speaking Visualizer */}
-          <div style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "16px",
-            margin: "20px 0"
-          }}>
-            <div style={{
-              width: "120px",
-              height: "120px",
-              borderRadius: "50%",
-              backgroundColor: isMuted ? "#FEF2F2" : callStatus === "active" && speakingStatus === "speaking" ? "#EEF2FF" : "#F8F9FA",
-              border: isMuted ? "2px solid #FCA5A5" : callStatus === "active" && speakingStatus === "speaking" ? "2px solid #818CF8" : "2px solid var(--border-main)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              position: "relative",
-              cursor: "pointer"
-            }}
-            onClick={callStatus === "inactive" ? startCall : undefined}
-            >
-              {callStatus === "active" && speakingStatus === "speaking" && (
-                <div style={{
-                  position: "absolute",
-                  inset: "-8px",
-                  borderRadius: "50%",
-                  border: "2px solid #818CF8",
-                  animation: "ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite",
-                  opacity: 0.6
-                }} />
-              )}
-              {callStatus === "active" && speakingStatus === "listening" && (
-                <div style={{
-                  position: "absolute",
-                  inset: "-8px",
-                  borderRadius: "50%",
-                  border: "2px solid #34D399",
-                  animation: "ping 2s cubic-bezier(0, 0, 0.2, 1) infinite",
-                  opacity: 0.4
-                }} />
-              )}
-              <span style={{ fontSize: "3rem" }}>
-                {isMuted ? "🔇" : callStatus === "inactive" ? "🎙️" : callStatus === "connecting" ? "⏳" : speakingStatus === "listening" ? "🟢" : speakingStatus === "processing" ? "⚙️" : "🔊"}
-              </span>
-            </div>
-
-            <div style={{ textAlign: "center" }}>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 700, textTransform: "capitalize" }}>
-                {callStatus === "inactive" ? "Microphone Disconnected" : `Call Status: ${callStatus}`}
-              </h3>
-              <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "4px" }}>
-                {callStatus === "inactive" && "Click to connect microphone & start call"}
-                {callStatus === "connecting" && "Establishing connection..."}
-                {callStatus === "active" && speakingStatus === "listening" && "Listening to you speak..."}
-                {callStatus === "active" && speakingStatus === "processing" && "Transcribing your response..."}
-                {callStatus === "active" && speakingStatus === "speaking" && "Interviewer is speaking..."}
-                {callStatus === "ended" && "Session ended."}
-              </p>
-            </div>
-          </div>
-
-          {/* Current Question Display */}
-          {currentQuestion && (
-            <div className="card" style={{ width: "100%", textAlign: "center", borderLeft: "4px solid #3B82F6" }}>
-              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#3B82F6", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
-                Active Question
-              </span>
-              <p style={{ fontSize: "1.1rem", lineHeight: "1.6", fontWeight: 500, color: "var(--text-primary)" }}>
-                {currentQuestion}
-              </p>
-            </div>
-          )}
-
-          {/* Collapsible dialogue logs */}
-          <details style={{ width: "100%" }}>
-            <summary style={{
-              cursor: "pointer",
-              fontSize: "0.85rem",
-              fontWeight: 600,
-              color: "var(--text-secondary)",
-              padding: "10px",
-              border: "1px solid var(--border-main)",
-              borderRadius: "8px",
-              backgroundColor: "#FFFFFF",
-              textAlign: "center"
-            }}>
-              Show Real-time Dialogue Log
-            </summary>
-            <div style={{
-              marginTop: "12px",
-              padding: "16px",
-              border: "1px solid var(--border-main)",
-              borderRadius: "8px",
-              backgroundColor: "#FCFCFD",
-              maxHeight: "200px",
-              overflowY: "auto",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px"
-            }}>
-              {messages.length === 0 && !liveTranscript && !correctedTranscript ? (
-                <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", textAlign: "center" }}>
-                  Dialogue logs will appear here once speech starts.
-                </p>
-              ) : (
-                <>
-                  {messages.map((m, index) => (
-                    <div key={index} style={{ fontSize: "0.85rem" }}>
-                      <span style={{ fontWeight: 700, color: m.sender === "interviewer" ? "#3B82F6" : "#2563EB" }}>
-                        {m.sender === "interviewer" ? "Interviewer: " : "You: "}
-                      </span>
-                      <span style={{ color: "var(--text-primary)" }}>{m.text}</span>
-                    </div>
-                  ))}
-                  {liveTranscript && (
-                    <div style={{ fontSize: "0.85rem", opacity: 0.8 }}>
-                      <span style={{ fontWeight: 700, color: "#2563EB" }}>You (Speaking...): </span>
-                      <span style={{ fontStyle: "italic", color: "var(--text-secondary)" }}>"{liveTranscript}"</span>
-                    </div>
-                  )}
-                  {correctedTranscript && (
-                    <div style={{ fontSize: "0.85rem" }}>
-                      <span style={{ fontWeight: 700, color: "#2563EB" }}>You (Processed): </span>
-                      <span style={{ color: "var(--text-primary)" }}>"{correctedTranscript}"</span>
-                    </div>
-                  )}
-                </>
-              )}
-              <div ref={chatEndRef} />
-            </div>
-          </details>
         </div>
 
-        {/* Bottom Control Actions */}
+        {/* Controls footer */}
         <footer style={{
           padding: "24px",
-          backgroundColor: "#FFFFFF",
-          borderTop: "1px solid var(--border-main)"
+          backgroundColor: "rgba(255, 253, 249, 0.84)",
+          borderTop: "1px solid var(--border-subtle)"
         }}>
-          <div style={{ display: "flex", gap: "16px", width: "100%", maxWidth: "600px", margin: "0 auto", justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: "16px", width: "100%", maxWidth: "480px", margin: "0 auto" }}>
             {callStatus === "inactive" ? (
               <button onClick={startCall} className="btn btn-primary" style={{ width: "100%", padding: "12px 24px" }}>
                 Connect Microphone
@@ -827,24 +822,17 @@ export default function VoiceInterviewRoom() {
                   className="btn btn-secondary"
                   style={{
                     flex: 1,
-                    backgroundColor: isMuted ? "#FEF2F2" : "#FFFFFF",
-                    borderColor: isMuted ? "#FCA5A5" : "var(--border-main)",
-                    color: isMuted ? "#EF4444" : "var(--text-secondary)"
+                    backgroundColor: isMuted ? "rgba(239, 68, 68, 0.08)" : "rgba(255, 255, 255, 0.8)",
+                    borderColor: isMuted ? "rgba(239, 68, 68, 0.3)" : "var(--border-subtle)",
+                    color: isMuted ? "#EF4444" : "var(--text-primary)"
                   }}
                 >
                   {isMuted ? "🔇 Unmute Mic" : "🎙️ Mute Mic"}
                 </button>
                 <button
-                  onClick={stopCall}
-                  className="btn btn-secondary"
-                  style={{ flex: 1 }}
-                >
-                  ⏸️ Pause Audio
-                </button>
-                <button
                   onClick={handleEndEarly}
                   className="btn btn-primary"
-                  style={{ flex: 1.5, backgroundColor: "#EF4444" }}
+                  style={{ flex: 1.5, background: "linear-gradient(135deg, #ef4444, #b91c1c)" }}
                 >
                   🏁 Finish & Report
                 </button>
@@ -854,69 +842,127 @@ export default function VoiceInterviewRoom() {
         </footer>
       </div>
 
-      {/* Sidebar Progress Panel (Collapsible) */}
-      {isSidePanelOpen && (
-        <aside style={{
-          width: "280px",
-          backgroundColor: "#FFFFFF",
-          height: "100vh",
-          padding: "32px 24px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "32px",
-          position: "sticky",
-          top: 0
-        }}>
-          {/* Progress */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <h3 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)" }}>
-              Progress
-            </h3>
-            <div style={{ fontSize: "1.8rem", fontWeight: 800, fontFamily: "var(--font-outfit)" }}>
-              {questionCount} <span style={{ fontSize: "1rem", fontWeight: 500, color: "var(--text-muted)" }}>/ {maxQuestionCount} Qs</span>
-            </div>
-            <div style={{ width: "100%", height: "6px", borderRadius: "3px", backgroundColor: "#E4E7EC", overflow: "hidden" }}>
-              <div style={{
-                width: `${(questionCount / maxQuestionCount) * 100}%`,
-                height: "100%",
-                backgroundColor: "#3B82F6",
-                transition: "width 0.3s ease"
-              }} />
-            </div>
+      {/* 3. RIGHT COLUMN: Metrics & Session Outline */}
+      <div className="voice-right-col">
+        {/* Progress bar */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <h3 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+            Progress
+          </h3>
+          <div style={{ fontSize: "1.8rem", fontWeight: 800, fontFamily: "var(--font-mono)", color: "var(--text-primary)" }}>
+            {questionCount} <span style={{ fontSize: "1rem", fontWeight: 500, color: "var(--text-muted)" }}>/ {maxQuestionCount} Qs</span>
           </div>
+          <div style={{ width: "100%", height: "6px", borderRadius: "3px", backgroundColor: "rgba(28, 23, 18, 0.08)", overflow: "hidden" }}>
+            <div style={{
+              width: `${(questionCount / maxQuestionCount) * 100}%`,
+              height: "100%",
+              backgroundColor: "var(--color-primary)",
+              transition: "width 0.3s ease"
+            }} />
+          </div>
+        </div>
 
-          {/* Current Phase */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <h3 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)" }}>
-              Current Phase
-            </h3>
-            <span className="badge badge-primary" style={{
-              alignSelf: "flex-start",
-              textTransform: "uppercase",
-              fontSize: "0.8rem",
-              padding: "6px 12px"
-            }}>
-              {phase.replace("_", " ")}
-            </span>
-          </div>
+        {/* Current phase indicator */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <h3 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+            Current Phase
+          </h3>
+          <span className="badge badge-primary" style={{
+            alignSelf: "flex-start",
+            textTransform: "uppercase",
+            fontSize: "0.8rem",
+            padding: "6px 12px",
+            fontFamily: "var(--font-mono)"
+          }}>
+            {phase.replace("_", " ")}
+          </span>
+        </div>
 
-          {/* Time Remaining */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <h3 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)" }}>
-              Duration
-            </h3>
-            <div style={{ fontSize: "1.1rem", fontWeight: 600 }}>
-              Elapsed: {formatTime(elapsedSeconds)}
-            </div>
+        {/* Timer */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <h3 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+            Duration
+          </h3>
+          <div style={{ fontSize: "1.1rem", fontWeight: 600, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+            Elapsed: {formatTime(elapsedSeconds)}
           </div>
-        </aside>
-      )}
+        </div>
+
+        {/* Simulated Candidate Notes Panel */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
+          <h3 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)" }}>
+            Scratchpad / Notes
+          </h3>
+          <textarea
+            placeholder="Type notes or structure your design thoughts here..."
+            style={{
+              flex: 1,
+              resize: "none",
+              fontSize: "0.9rem",
+              padding: "12px",
+              borderRadius: "14px",
+              border: "1px solid var(--border-subtle)",
+              background: "rgba(255, 255, 255, 0.8)",
+              color: "var(--text-primary)",
+              width: "100%"
+            }}
+          />
+        </div>
+      </div>
 
       <style jsx>{`
+        .voice-room-container {
+          display: grid;
+          grid-template-columns: 320px 1fr 300px;
+          height: 100vh;
+          background-color: var(--bg-main);
+        }
+        .voice-left-col {
+          background-color: rgba(255, 253, 249, 0.8);
+          border-right: 1px solid var(--border-subtle);
+          padding: 32px 24px;
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+        }
+        .voice-center-col {
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+        }
+        .voice-right-col {
+          background-color: rgba(255, 253, 249, 0.8);
+          border-left: 1px solid var(--border-subtle);
+          padding: 32px 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 32px;
+          height: 100vh;
+        }
         @keyframes ping {
           75%, 100% {
             transform: scale(1.4);
             opacity: 0;
+          }
+        }
+        @keyframes rotate-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @media (max-width: 1024px) {
+          .voice-room-container {
+            grid-template-columns: 280px 1fr;
+          }
+          .voice-right-col {
+            display: none;
+          }
+        }
+        @media (max-width: 768px) {
+          .voice-room-container {
+            grid-template-columns: 1fr;
+          }
+          .voice-left-col {
+            display: none;
           }
         }
       `}</style>

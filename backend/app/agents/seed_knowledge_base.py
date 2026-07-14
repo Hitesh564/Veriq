@@ -1,10 +1,15 @@
 import os
 import uuid
 from typing import List, Dict, Any
-# pyrefly: ignore [missing-import]
-from qdrant_client import QdrantClient
-# pyrefly: ignore [missing-import]
-from qdrant_client.http import models as q_models
+
+try:
+    # pyrefly: ignore [missing-import]
+    from qdrant_client import QdrantClient
+    # pyrefly: ignore [missing-import]
+    from qdrant_client.http import models as q_models
+except ImportError:
+    QdrantClient = None
+    q_models = None
 
 # Curated, fine-grained concept knowledge base
 KNOWLEDGE_DATA = [
@@ -242,6 +247,10 @@ def seed_qdrant_kb():
     Seeds the local Qdrant Vector database with detailed concept resource cards.
     If GEMINI_API_KEY is not set or valid, disables vector ingestion and logs a warning.
     """
+    if QdrantClient is None or q_models is None:
+        print("[WARNING] qdrant_client is not installed in the active environment. Skipping vector database ingestion.")
+        return False
+
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if not api_key or api_key == "placeholder_api_key" or api_key == "your_gemini_api_key_here":
         print("[WARNING] GEMINI_API_KEY is not configured. Skipping vector database ingestion; local keyword lookup is enabled.")

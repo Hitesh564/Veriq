@@ -1,194 +1,102 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
 import { useAuth } from "../context/AuthContext";
-import { supabase } from "../utils/supabaseClient";
+
+const plans = [
+  {
+    name: "Free",
+    price: "$0",
+    blurb: "Try the experience and get a feel for the workflow.",
+    features: ["Three interviews", "Basic report", "History view"]
+  },
+  {
+    name: "Pro",
+    price: "$19.99",
+    blurb: "Best for steady practice and a deeper feedback loop.",
+    features: ["Unlimited sessions", "Detailed evaluations", "Learning plans"],
+    featured: true
+  },
+  {
+    name: "Team",
+    price: "Custom",
+    blurb: "Built for bootcamps, cohorts, and hiring teams.",
+    features: ["Shared setup", "Cohort analytics", "Custom rollout"]
+  }
+];
 
 export default function PricingPage() {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [credits, setCredits] = useState<any>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    const fetchCredits = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-        const res = await fetch("http://127.0.0.1:8000/api/v1/payments/subscription", {
-          headers: {
-            "Authorization": `Bearer ${session.access_token}`
-          }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setCredits(data);
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchCredits();
-  }, [user]);
-
-  const handleUpgrade = async (planId: string) => {
-    if (!user) {
-      setError("Please sign in or create an account to upgrade.");
-      return;
-    }
-    
-    setLoading(true);
-    setError("");
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setError("User session expired. Please sign in again.");
-        setLoading(false);
-        return;
-      }
-      
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/payments/create-checkout-session?plan_id=${planId}`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${session.access_token}`
-        }
-      });
-      if (!res.ok) throw new Error("Could not initialize Stripe checkout session.");
-      const data = await res.json();
-      if (data?.url) {
-        window.location.href = data.url;
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to initialize upgrade checkout.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const router = useRouter();
+  const { setShowAuthModal } = useAuth();
 
   return (
-    <div style={{ maxWidth: "900px", margin: "40px auto", padding: "0 20px" }}>
-      <div style={{ textAlign: "center", marginBottom: "48px" }}>
-        <h1 style={{ fontFamily: "var(--font-outfit)", fontSize: "2.5rem", fontWeight: 800, color: "var(--text-primary)", marginBottom: "12px" }}>
-          Simple, Transparent Pricing
-        </h1>
-        <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem", maxWidth: "600px", margin: "0 auto", lineHeight: "1.6" }}>
-          Practice adaptive technical simulations, calibrate your skills checklist, and clear coding or system design interviews.
-        </p>
-      </div>
-
-      {error && (
-        <div style={{
-          backgroundColor: "#FEF2F2",
-          border: "1px solid #FCA5A5",
-          color: "#991B1B",
-          padding: "12px 16px",
-          borderRadius: "8px",
-          marginBottom: "32px",
-          fontSize: "0.95rem"
-        }}>
-          {error}
-        </div>
-      )}
-
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-        gap: "32px",
-        alignItems: "start"
-      }}>
-        {/* FREE PLAN */}
-        <div className="card" style={{ padding: "32px", display: "flex", flexDirection: "column", minHeight: "440px", border: "1px solid var(--border-main)" }}>
-          <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "8px" }}>Free Trial</h3>
-          <div style={{ display: "flex", alignItems: "baseline", gap: "4px", marginBottom: "20px" }}>
-            <span style={{ fontSize: "2.25rem", fontWeight: 800, color: "var(--text-primary)" }}>$0</span>
-            <span style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>/ always free</span>
+    <div className="section-shell">
+      <div className="page-shell">
+        <section className="hero-panel reveal-up" style={{ padding: "36px" }}>
+          <div className="eyebrow">Pricing</div>
+          <h1 className="page-title text-balance" style={{ marginTop: "16px", maxWidth: "12ch" }}>
+            Pricing that matches the product story.
+          </h1>
+          <p className="hero-copy" style={{ marginTop: "14px", maxWidth: "62ch" }}>
+            Start free, move to Pro when you want unlimited practice, and use Team for structured rollouts across a group.
+          </p>
+          <div style={{ marginTop: "22px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <button className="btn btn-primary" onClick={() => setShowAuthModal(true)}>Start free</button>
+            <Link href="/product" className="btn btn-secondary">View product</Link>
           </div>
-          
-          <ul style={{ listStyleType: "none", padding: 0, margin: "0 0 32px 0", display: "flex", flexDirection: "column", gap: "14px", flex: 1 }}>
-            <li style={{ display: "flex", gap: "10px", fontSize: "0.95rem", color: "var(--text-secondary)" }}>
-              ✅ 3 completed mock interviews
-            </li>
-            <li style={{ display: "flex", gap: "10px", fontSize: "0.95rem", color: "var(--text-secondary)" }}>
-              ✅ Basic performance feedback report
-            </li>
-            <li style={{ display: "flex", gap: "10px", fontSize: "0.95rem", color: "var(--text-secondary)" }}>
-              ✅ Text transcript verification
-            </li>
-            <li style={{ display: "flex", gap: "10px", fontSize: "0.95rem", color: "var(--text-secondary)", textDecoration: "line-through", opacity: 0.6 }}>
-              ❌ Unlimited mock simulations
-            </li>
-          </ul>
+        </section>
 
-          <button
-            disabled
-            className="btn btn-secondary"
-            style={{ width: "100%", padding: "12px", fontSize: "1rem", cursor: "not-allowed" }}
-          >
-            {credits && credits.plan_id === "free" ? "Active Plan" : "Current Plan"}
-          </button>
-        </div>
+        <section className="pricing-grid" style={{ marginTop: "28px" }}>
+          {plans.map((plan) => (
+            <div key={plan.name} className={`pricing-card ${plan.featured ? "pricing-card--featured" : ""}`}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
+                <div>
+                  <h2 style={{ fontFamily: "var(--font-outfit)", fontSize: "1.55rem", fontWeight: 800 }}>{plan.name}</h2>
+                  <p className="section-copy" style={{ marginTop: "8px" }}>{plan.blurb}</p>
+                </div>
+                {plan.featured && <span className="badge badge-primary">Most popular</span>}
+              </div>
+              <div className="pricing-card__price">{plan.price}</div>
+              <div style={{ display: "grid", gap: "10px" }}>
+                {plan.features.map((feature) => (
+                  <div key={feature} style={{ display: "flex", gap: "10px", alignItems: "center", color: "var(--text-secondary)" }}>
+                    <span style={{ width: "8px", height: "8px", borderRadius: "999px", background: "var(--color-primary)" }} />
+                    <span>{feature}</span>
+                  </div>
+                ))}
+              </div>
+              <button
+                className={plan.featured ? "btn btn-primary" : "btn btn-secondary"}
+                onClick={() => setShowAuthModal(true)}
+              >
+                {plan.featured ? "Upgrade to Pro" : "Start here"}
+              </button>
+            </div>
+          ))}
+        </section>
 
-        {/* PRO PLAN */}
-        <div className="card" style={{
-          padding: "32px",
-          display: "flex",
-          flexDirection: "column",
-          minHeight: "440px",
-          border: "2px solid #3B82F6",
-          position: "relative",
-          boxShadow: "0 10px 30px rgba(59, 130, 246, 0.08)"
-        }}>
-          <div style={{
-            position: "absolute",
-            top: "-14px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            backgroundColor: "#3B82F6",
-            color: "#FFFFFF",
-            padding: "4px 14px",
-            borderRadius: "20px",
-            fontSize: "0.75rem",
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.5px"
-          }}>
-            Most Popular
-          </div>
-          
-          <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "8px" }}>Pro Access</h3>
-          <div style={{ display: "flex", alignItems: "baseline", gap: "4px", marginBottom: "20px" }}>
-            <span style={{ fontSize: "2.25rem", fontWeight: 800, color: "var(--text-primary)" }}>$19.99</span>
-            <span style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>/ month</span>
+        <section className="feature-grid" style={{ marginTop: "28px" }}>
+          <div className="feature-card" style={{ gridColumn: "span 7" }}>
+            <div className="eyebrow">Included in Pro</div>
+            <h2 className="section-title text-balance" style={{ marginTop: "14px" }}>Everything you need to keep practicing without friction.</h2>
+            <p className="section-copy" style={{ marginTop: "10px" }}>
+              Pro is where the full feedback loop comes alive: unlimited interviews, learning plans, and the option to keep sessions focused on your weak spots.
+            </p>
           </div>
 
-          <ul style={{ listStyleType: "none", padding: 0, margin: "0 0 32px 0", display: "flex", flexDirection: "column", gap: "14px", flex: 1 }}>
-            <li style={{ display: "flex", gap: "10px", fontSize: "0.95rem", color: "var(--text-secondary)" }}>
-              ✅ <strong>Unlimited</strong> mock simulations
-            </li>
-            <li style={{ display: "flex", gap: "10px", fontSize: "0.95rem", color: "var(--text-secondary)" }}>
-              ✅ Multi-dimensional AI grading report
-            </li>
-            <li style={{ display: "flex", gap: "10px", fontSize: "0.95rem", color: "var(--text-secondary)" }}>
-              ✅ Resume gap mapping & checklist updates
-            </li>
-            <li style={{ display: "flex", gap: "10px", fontSize: "0.95rem", color: "var(--text-secondary)" }}>
-              ✅ Real-time EdgeTTS byte streaming
-            </li>
-            <li style={{ display: "flex", gap: "10px", fontSize: "0.95rem", color: "var(--text-secondary)" }}>
-              ✅ Priority support & portal configuration
-            </li>
-          </ul>
-
-          <button
-            onClick={() => handleUpgrade("pro")}
-            disabled={loading || (credits && credits.is_subscribed)}
-            className="btn btn-primary"
-            style={{ width: "100%", padding: "12px", fontSize: "1rem" }}
-          >
-            {loading ? "Redirecting..." : (credits && credits.is_subscribed) ? "Already Subscribed" : "Upgrade to Pro"}
-          </button>
-        </div>
+          <div className="feature-card" style={{ gridColumn: "span 5" }}>
+            <div className="eyebrow">Need help</div>
+            <h3 style={{ fontFamily: "var(--font-outfit)", fontSize: "1.4rem", fontWeight: 800, marginTop: "14px" }}>Not sure which plan to pick?</h3>
+            <p className="section-copy" style={{ marginTop: "10px" }}>
+              If you are just validating the product, start free. If you are practicing weekly, Pro is the better fit.
+            </p>
+            <button className="btn btn-secondary" style={{ marginTop: "16px" }} onClick={() => router.push("/how-it-works")}>
+              See the workflow
+            </button>
+          </div>
+        </section>
       </div>
     </div>
   );

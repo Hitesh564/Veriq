@@ -703,10 +703,13 @@ async def prepare_interview(payload: PrepareInterviewCreate, db: Session = Depen
     CandidateProfile -> JobProfile -> GapAnalysis -> CompanyProfile -> InterviewBlueprint
     and creates the session DB row.
     """
+    print("[prepare-interview] request received")
     from app.services.profile_service import build_candidate_profile, build_job_profile, build_gap_analysis, get_company_profile
     from app.agents.interview_planner import build_interview_blueprint
+    interview_timeout_seconds = int(os.getenv("INTERVIEW_AGENT_TIMEOUT_SECONDS", "45"))
     
     # 1. Generate profiles in parallel
+    print("[prepare-interview] building candidate and job profiles")
     cand_task = build_candidate_profile(payload.resume_text) if payload.resume_text else None
     job_task = build_job_profile(payload.jd_text) if payload.jd_text else None
     
@@ -717,21 +720,25 @@ async def prepare_interview(payload: PrepareInterviewCreate, db: Session = Depen
         job_prof = await job_task if job_task else JobProfile()
         
     # 2. Run Gap Analysis
+    print("[prepare-interview] running gap analysis")
     gap = await build_gap_analysis(cand_prof, job_prof)
     
     # 3. Fetch Company Profile
+    print("[prepare-interview] loading company profile")
     company_prof = get_company_profile(payload.company_name or "Target Company")
     
     # 4. Build Blueprint
-    blueprint = build_interview_blueprint(
-        mode=payload.mode or "quick",
-        role=payload.role,
-        difficulty=payload.difficulty,
-        duration_minutes=payload.duration_minutes,
-        company_profile=company_prof,
-        candidate_profile=cand_prof,
-        job_profile=job_prof,
-        gap_analysis=gap
+    print("[prepare-interview] building blueprint")
+    blueprint = await asyncio.to_thread(
+        build_interview_blueprint,
+        payload.mode or "quick",
+        payload.role,
+        payload.difficulty,
+        payload.duration_minutes,
+        company_prof,
+        cand_prof,
+        job_prof,
+        gap,
     )
     
     # 5. Save everything in Interview database row
@@ -775,6 +782,7 @@ async def prepare_interview(payload: PrepareInterviewCreate, db: Session = Depen
     }
 
     # Generate first question
+    print("[prepare-interview] generating initial interviewer turn")
     initial_state = {
         "messages": [],
         "role": payload.role,
@@ -798,7 +806,10 @@ async def prepare_interview(payload: PrepareInterviewCreate, db: Session = Depen
     }
 
     try:
-        result = interview_agent.invoke(initial_state)
+        result = await asyncio.wait_for(
+            asyncio.to_thread(interview_agent.invoke, initial_state),
+            timeout=interview_timeout_seconds,
+        )
         first_question = result.get("current_question", "Welcome to your mock technical interview. Let's begin.")
         primary_topic = result.get("primary_topic", "Introduction")
         topic_tree = result.get("topic_tree", blueprint.topic_tree)
@@ -1905,7 +1916,8 @@ def process_interview_turn(id: str, candidate_text: str, session: Session, audio
                 except:
                     pass
             break
-            
+    evaluated_scores = [t.score for t in transcripts_list if t.sender == "candidate" and t.score is not None]
+    
     current_state = {
         "messages": langchain_messages,
         "role": interview.role,

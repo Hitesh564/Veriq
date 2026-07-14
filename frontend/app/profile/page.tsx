@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../utils/supabaseClient";
+import { safeJsonFetch } from "../utils/api";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -12,150 +14,123 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!user) return;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) return;
-      fetch("http://127.0.0.1:8000/api/v1/interviews/profile/card", {
-        headers: {
-          "Authorization": `Bearer ${session.access_token}`
-        }
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          setProfile(data);
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error("Error fetching profile details:", err);
-          setLoading(false);
-        });
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) {
+        setLoading(false);
+        return;
+      }
+
+      const data = await safeJsonFetch<any>("/api/v1/interviews/profile/card", {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
+
+      setProfile(data);
+      setLoading(false);
     });
   }, [user]);
 
-  const getStreak = () => {
-    return profile?.history_trends?.streak || 0;
-  };
-
-  const getProvenClaimsCount = () => {
-    return profile?.proven_skills?.length || 0;
-  };
-
-  const getWeakSkillsCount = () => {
-    return profile?.weak_skills?.length || 0;
-  };
-
   if (loading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-        <div style={{ height: "180px", backgroundColor: "#FFFFFF", borderRadius: "12px", border: "1px solid #E4E7EC", width: "100%", animation: "pulse 1.5s infinite" }} />
-        <style jsx>{`
-          @keyframes pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 0.9; }
-            100% { opacity: 0.6; }
-          }
-        `}</style>
+      <div className="section-shell">
+        <div className="page-shell">
+          <div className="hero-panel" style={{ minHeight: "240px" }} />
+        </div>
       </div>
     );
   }
 
+  const getStreak = () => profile?.history_trends?.streak || 0;
+  const getProvenClaimsCount = () => profile?.proven_skills?.length || 0;
+  const getWeakSkillsCount = () => profile?.weak_skills?.length || 0;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "32px", maxWidth: "800px", margin: "0 auto" }}>
-      
-      {/* Profile Overview Card */}
-      <div className="card" style={{ display: "flex", gap: "24px", alignItems: "center", flexWrap: "wrap" }}>
-        <div style={{
-          width: "80px",
-          height: "80px",
-          borderRadius: "50%",
-          backgroundColor: "#3B82F6",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#FFFFFF",
-          fontSize: "2.2rem",
-          fontWeight: 700
-        }}>
-          {user?.email?.slice(0, 2).toUpperCase() || "US"}
-        </div>
-        <div>
-          <h1 style={{ fontFamily: "var(--font-outfit)", fontSize: "1.6rem", fontWeight: 800, color: "var(--text-primary)" }}>
-            {user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"}
-          </h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
-            Candidate • Connected via {user?.app_metadata?.provider || 'Credentials'}
-          </p>
-          <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-            <span className="badge badge-primary">AI Engineer</span>
-            <span className="badge badge-primary">Backend Developer</span>
+    <main className="section-shell">
+      <div className="page-shell">
+        <section className="hero-grid">
+          <div className="hero-panel">
+            <div className="section-kicker">Profile</div>
+            <h1 className="page-title" style={{ marginTop: "18px", maxWidth: "12ch" }}>
+              Candidate profile and progress.
+            </h1>
+            <p className="hero-copy" style={{ marginTop: "14px", maxWidth: "58ch" }}>
+              View your verified skills, practice streak, and the gaps the system is watching.
+            </p>
           </div>
-        </div>
-      </div>
 
-      {/* Stats Counter Section */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px" }}>
-        <div className="card" style={{ textAlign: "center", padding: "16px" }}>
-          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700 }}>Practice Streak</span>
-          <span style={{ display: "block", fontSize: "1.8rem", fontWeight: 800, margin: "6px 0", color: "#F97316" }}>🔥 {getStreak()} Days</span>
-        </div>
-        
-        <div className="card" style={{ textAlign: "center", padding: "16px" }}>
-          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700 }}>Verified Claims</span>
-          <span style={{ display: "block", fontSize: "1.8rem", fontWeight: 800, margin: "6px 0", color: "var(--color-success)" }}>✓ {getProvenClaimsCount()}</span>
-        </div>
-
-        <div className="card" style={{ textAlign: "center", padding: "16px" }}>
-          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700 }}>Gaps to Address</span>
-          <span style={{ display: "block", fontSize: "1.8rem", fontWeight: 800, margin: "6px 0", color: "var(--color-error)" }}>⚠️ {getWeakSkillsCount()}</span>
-        </div>
-      </div>
-
-      <div className="card" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-        <h2 style={{ fontSize: "1.1rem", fontWeight: 700, fontFamily: "var(--font-outfit)" }}>Verified Credentials</h2>
-        {!profile?.proven_skills || profile.proven_skills.length === 0 ? (
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>No skills verified yet. Accomplish technical evaluation milestones to prove claims.</p>
-        ) : (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            {profile.proven_skills.map((skill: string) => (
-              <span key={skill} className="badge badge-success" style={{ padding: "6px 12px", fontSize: "0.8rem" }}>
-                ✓ {skill}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Achievements Badges */}
-      <div className="card" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-        <h2 style={{ fontSize: "1.1rem", fontWeight: 700, fontFamily: "var(--font-outfit)" }}>Platform Achievements</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
-          {[
-            { title: "First Practice Completed", desc: "Simulated your first mock AI session.", icon: "🏅", unlocked: true },
-            { title: "Credibility Established", desc: "Successfully verified 1+ candidate resume claim.", icon: "🎯", unlocked: getProvenClaimsCount() > 0 },
-            { title: "Routine Developer", desc: "Maintained a practice streak for 2+ consecutive turns.", icon: "⚡", unlocked: getStreak() >= 2 }
-          ].map((ach) => (
-            <div
-              key={ach.title}
-              style={{
-                padding: "16px",
-                borderRadius: "10px",
-                border: "1px solid var(--border-main)",
-                backgroundColor: ach.unlocked ? "#FFFFFF" : "#F8F9FA",
-                opacity: ach.unlocked ? 1 : 0.5,
-                display: "flex",
-                gap: "12px",
-                alignItems: "center"
-              }}
-            >
-              <div style={{ fontSize: "2rem" }}>{ach.icon}</div>
-              <div>
-                <h4 style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-primary)" }}>{ach.title}</h4>
-                <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "2px" }}>{ach.desc}</p>
+          <div className="hero-visual" style={{ padding: "28px" }}>
+            <div style={{ display: "grid", gap: "16px" }}>
+              <div className="card" style={{ display: "flex", gap: "18px", alignItems: "center" }}>
+                <div style={{
+                  width: "84px",
+                  height: "84px",
+                  borderRadius: "28px",
+                  background: "linear-gradient(135deg, #111110, #d5ad34)",
+                  color: "#fff",
+                  display: "grid",
+                  placeItems: "center",
+                  fontFamily: "var(--font-display)",
+                  fontSize: "1.6rem",
+                  fontWeight: 700
+                }}>
+                  {(user?.email?.slice(0, 2).toUpperCase()) || "AI"}
+                </div>
+                <div>
+                  <div style={{ fontFamily: "var(--font-display)", fontSize: "1.8rem", fontWeight: 700 }}>
+                    {user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"}
+                  </div>
+                  <p className="section-copy">Candidate · Connected via {user?.app_metadata?.provider || "credentials"}</p>
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "12px" }}>
+                <div className="card" style={{ textAlign: "center", padding: "16px" }}>
+                  <div className="ambient-label">Streak</div>
+                  <div style={{ fontSize: "2rem", fontWeight: 700, marginTop: "6px" }}>{getStreak()}</div>
+                </div>
+                <div className="card" style={{ textAlign: "center", padding: "16px" }}>
+                  <div className="ambient-label">Verified</div>
+                  <div style={{ fontSize: "2rem", fontWeight: 700, marginTop: "6px" }}>{getProvenClaimsCount()}</div>
+                </div>
+                <div className="card" style={{ textAlign: "center", padding: "16px" }}>
+                  <div className="ambient-label">Gaps</div>
+                  <div style={{ fontSize: "2rem", fontWeight: 700, marginTop: "6px" }}>{getWeakSkillsCount()}</div>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        </section>
 
-    </div>
+        <section style={{ marginTop: "28px" }} className="feature-grid">
+          <div className="feature-card feature-card--wide">
+            <div className="ambient-label">Verified Credentials</div>
+            <h2 className="headline" style={{ marginTop: "10px" }}>Claims you have already proven</h2>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "16px" }}>
+              {!profile?.proven_skills || profile.proven_skills.length === 0 ? (
+                <p className="section-copy">No skills verified yet. Complete sessions to establish proof.</p>
+              ) : (
+                profile.proven_skills.map((skill: string) => (
+                  <span key={skill} className="badge badge-success">{skill}</span>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="feature-card feature-card--tall">
+            <div className="ambient-label">Focus areas</div>
+            <h2 className="headline" style={{ marginTop: "10px" }}>Topics to tighten</h2>
+            <div style={{ display: "grid", gap: "12px", marginTop: "16px" }}>
+              {(profile?.weak_skills || []).length === 0 ? (
+                <p className="section-copy">No weak skills are flagged right now.</p>
+              ) : (
+                profile.weak_skills.map((skill: string) => (
+                  <div key={skill} className="card" style={{ padding: "14px" }}>
+                    <div style={{ fontWeight: 700 }}>{skill}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../utils/supabaseClient";
+import { safeJsonFetch } from "../../utils/api";
 
 interface TranscriptItem {
   sender: "interviewer" | "candidate";
@@ -75,45 +76,36 @@ export default function TranscriptView() {
         };
 
         const [sessionData, reportData] = await Promise.all([
-          fetch(`http://127.0.0.1:8000/api/v1/interviews/${id}`, { headers }).then((res) => {
-            if (!res.ok) throw new Error("Could not find session data.");
-            return res.json();
-          }),
-          fetch(`http://127.0.0.1:8000/api/evaluation/${id}`, { headers }).then((res) => {
-            if (res.status === 404) return null;
-            if (!res.ok) return null;
-            return res.json();
-          }).catch(() => null)
+          safeJsonFetch<InterviewDetail>(`/api/v1/interviews/${id}`, { headers }),
+          safeJsonFetch<any>(`/api/evaluation/${id}`, { headers })
         ]);
 
-        setSession(sessionData);
+        if (sessionData) setSession(sessionData);
         setReport(reportData);
         setLoading(false);
 
-        if (sessionData.status === "completed" && !reportData) {
+        if (sessionData?.status === "completed" && !reportData) {
           let attempts = 0;
           pollInterval = setInterval(() => {
             attempts++;
-            if (attempts > 30) {
+            if (attempts > 5) {
               clearInterval(pollInterval);
+              setError("The evaluation report is not ready yet. Please refresh in a moment.");
+              setLoading(false);
               return;
             }
-            fetch(`http://127.0.0.1:8000/api/evaluation/${id}`, { headers })
-              .then((res) => {
-                if (res.ok) return res.json();
-                return null;
-              })
-              .then((data) => {
-                if (data) {
-                  setReport(data);
-                  clearInterval(pollInterval);
-                }
-              })
-              .catch(() => {});
+            safeJsonFetch<any>(`/api/evaluation/${id}`, { headers }).then((data) => {
+              if (data) {
+                setReport(data);
+                clearInterval(pollInterval);
+                setLoading(false);
+              }
+            });
           }, 2000);
+        } else if (sessionData?.status === "completed" && reportData) {
+          setLoading(false);
         }
-      } catch (err: any) {
-        console.error(err);
+      } catch {
         setError("Failed to fetch interview transcript summary.");
         setLoading(false);
       }
@@ -256,7 +248,7 @@ export default function TranscriptView() {
           justifyContent: "center",
           textAlign: "center",
           padding: "48px 32px",
-          backgroundColor: "var(--card-bg)",
+          backgroundColor: "var(--bg-card)",
           borderRadius: "16px",
           border: "1px dashed var(--border-subtle)",
           gap: "16px"
@@ -266,7 +258,7 @@ export default function TranscriptView() {
             height: "48px",
             borderRadius: "50%",
             border: "3px solid var(--border-subtle)",
-            borderTopColor: "#3B82F6",
+            borderTopColor: "var(--color-primary)",
             animation: "spin 1s linear infinite"
           }} />
           <div>
@@ -291,7 +283,7 @@ export default function TranscriptView() {
         <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
           
           {/* Main Hire Recommendation */}
-          <div className="card" style={{ borderLeft: "4px solid #3B82F6" }}>
+          <div className="card" style={{ borderLeft: "4px solid var(--color-primary)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "16px", marginBottom: "16px", borderBottom: "1px solid var(--border-subtle)", flexWrap: "wrap", gap: "12px" }}>
               <h2 style={{ fontFamily: "var(--font-outfit)", fontSize: "1.25rem", fontWeight: 700 }}>
                 Hiring Assessment Summary
@@ -302,7 +294,7 @@ export default function TranscriptView() {
                   (report.hire_recommendation.toLowerCase().includes("hire") && !report.hire_recommendation.toLowerCase().includes("no hire"))
                     ? "badge-success"
                     : "badge-error"
-                }`} style={{ padding: "6px 14px", borderRadius: "12px" }}>
+                }`} style={{ padding: "6px 14px", borderRadius: "12px", fontFamily: "var(--font-mono)" }}>
                   {report.hire_recommendation} (Confidence: {report.confidence_level || "Medium"})
                 </span>
               )}
@@ -432,7 +424,7 @@ export default function TranscriptView() {
                           border: "1px solid var(--border-subtle)",
                           borderRadius: "12px",
                           overflow: "hidden",
-                          backgroundColor: isExpanded ? "var(--bg-subtle)" : "transparent",
+                          backgroundColor: isExpanded ? "rgba(213, 173, 52, 0.08)" : "transparent",
                           transition: "all 0.2s ease"
                         }}>
                           {/* Card Header */}
@@ -448,14 +440,14 @@ export default function TranscriptView() {
                             }}
                           >
                             <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1, marginRight: "16px" }}>
-                              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>
+                              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
                                 {claim.project || "General Project"}
                               </span>
                               <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
                                 {claim.claim}
                               </span>
                               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px", flexWrap: "wrap" }}>
-                                <span style={{ fontSize: "0.75rem", fontFamily: "monospace", color: "var(--color-accent)", fontWeight: 700 }}>
+                                <span style={{ fontSize: "0.75rem", fontFamily: "var(--font-mono)", color: "var(--color-accent)", fontWeight: 700 }}>
                                   Strength: {strengthBarStr} {confidence}%
                                 </span>
                                 <span className={`badge ${
@@ -475,13 +467,13 @@ export default function TranscriptView() {
                             <div style={{
                               padding: "14px 16px",
                               borderTop: "1px solid var(--border-subtle)",
-                              backgroundColor: "var(--card-bg)",
+                              backgroundColor: "var(--bg-card)",
                               display: "flex",
                               flexDirection: "column",
                               gap: "14px"
                             }}>
                               <div>
-                                <h4 style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", marginBottom: "6px" }}>
+                                <h4 style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", marginBottom: "6px", fontFamily: "var(--font-mono)" }}>
                                   Evidence Coverage Rating
                                 </h4>
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "8px" }}>
@@ -489,7 +481,7 @@ export default function TranscriptView() {
                                     <div key={cat} style={{
                                       padding: "6px 10px",
                                       borderRadius: "6px",
-                                      backgroundColor: "var(--bg-subtle)",
+                                      backgroundColor: "rgba(255, 255, 255, 0.82)",
                                       border: "1px solid var(--border-subtle)",
                                       display: "flex",
                                       flexDirection: "column",
@@ -717,8 +709,8 @@ export default function TranscriptView() {
                     gap: "16px",
                     padding: "16px",
                     borderRadius: "12px",
-                    border: "1px solid rgba(59, 130, 246, 0.2)",
-                    backgroundColor: "rgba(59, 130, 246, 0.02)"
+                    border: "1px solid rgba(213, 173, 52, 0.22)",
+                    backgroundColor: "rgba(255, 255, 255, 0.78)"
                   }}>
                     {/* Left Column: Dialogue snippet */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -740,7 +732,7 @@ export default function TranscriptView() {
                     <div style={{
                       padding: "12px",
                       borderRadius: "8px",
-                      backgroundColor: "var(--card-bg)",
+                      backgroundColor: "var(--bg-card)",
                       border: "1px solid var(--border-subtle)",
                       display: "flex",
                       flexDirection: "column",
@@ -762,10 +754,10 @@ export default function TranscriptView() {
                       
                       {metadata?.claim && metadata?.claim !== "None" && (
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem" }}>
-                          <span style={{ color: "var(--text-muted)" }}>Active Claim:</span>
-                          <span style={{ fontWeight: 600, color: "var(--text-primary)", maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {metadata.claim}
-                          </span>
+                           <span style={{ color: "var(--text-muted)" }}>Active Claim:</span>
+                           <span style={{ fontWeight: 600, color: "var(--text-primary)", maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                             {metadata.claim}
+                           </span>
                         </div>
                       )}
                       
@@ -832,7 +824,7 @@ export default function TranscriptView() {
                         height: "10px",
                         borderRadius: "50%",
                         backgroundColor: metadata?.confidence_gain > 0 ? "var(--color-success)" : "var(--border-subtle)",
-                        border: "2px solid var(--card-bg)"
+                        border: "2px solid var(--bg-card)"
                       }} />
                       
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: "8px" }}>
@@ -894,8 +886,8 @@ export default function TranscriptView() {
                     paddingLeft: "8px",
                     paddingRight: "8px",
                     borderRadius: "8px",
-                    backgroundColor: isReplayingThis ? "rgba(59, 130, 246, 0.08)" : "transparent",
-                    border: isReplayingThis ? "1px solid rgba(59, 130, 246, 0.3)" : "none",
+                    backgroundColor: isReplayingThis ? "rgba(213, 173, 52, 0.12)" : "transparent",
+                    border: isReplayingThis ? "1px solid rgba(213, 173, 52, 0.28)" : "none",
                     transition: "all 0.3s ease"
                   }}
                 >
@@ -903,8 +895,8 @@ export default function TranscriptView() {
                     width: "36px",
                     height: "36px",
                     borderRadius: "8px",
-                    backgroundColor: isInterviewer ? "var(--color-accent-bg)" : "#EFF6FF",
-                    color: isInterviewer ? "var(--color-accent)" : "#2563EB",
+                    backgroundColor: isInterviewer ? "rgba(255, 255, 255, 0.84)" : "rgba(213, 173, 52, 0.12)",
+                    color: isInterviewer ? "var(--color-accent)" : "var(--color-primary)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",

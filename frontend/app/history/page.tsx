@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../utils/supabaseClient";
+import { safeJsonFetch } from "../utils/api";
 
 interface InterviewSession {
   id: string;
@@ -14,7 +15,6 @@ interface InterviewSession {
   status: string;
   created_at: string;
   company_name?: string;
-  score?: number;
 }
 
 export default function HistoryPage() {
@@ -28,180 +28,180 @@ export default function HistoryPage() {
   useEffect(() => {
     if (!user) return;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) return;
-      fetch("http://127.0.0.1:8000/api/v1/interviews", {
-        headers: {
-          "Authorization": `Bearer ${session.access_token}`
-        }
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error("Failed to load history");
-          return res.json();
-        })
-        .then((data) => {
-          setSessions(data);
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error("Error fetching sessions:", err);
-          setLoading(false);
-        });
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) {
+        setLoading(false);
+        return;
+      }
+
+      const data = await safeJsonFetch<InterviewSession[]>("/api/v1/interviews", {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
+
+      setSessions(Array.isArray(data) ? data : []);
+      setLoading(false);
     });
   }, [user]);
+
+  const filteredSessions = useMemo(() => {
+    return sessions.filter((s) => {
+      const roleMatch = s.role.toLowerCase().includes(search.toLowerCase());
+      const companyMatch = (s.company_name || "").toLowerCase().includes(search.toLowerCase());
+      const diffMatch = difficultyFilter === "all" || s.difficulty === difficultyFilter;
+      return (roleMatch || companyMatch) && diffMatch;
+    });
+  }, [difficultyFilter, search, sessions]);
+
+  const counts = useMemo(() => ({
+    total: sessions.length,
+    completed: sessions.filter((s) => s.status === "completed").length,
+    active: sessions.filter((s) => s.status !== "completed").length
+  }), [sessions]);
 
   const formatDate = (dateString: string) => {
     let s = dateString;
     if (s && !s.endsWith("Z") && !s.includes("+") && !s.includes("-")) {
       s += "Z";
     }
-    const d = new Date(s);
-    return d.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
+    return new Date(s).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
-
-  const handleDeleteMock = (id: string) => {
-    // Perform local client-side state cleanup for UX simplicity
-    setSessions((prev) => prev.filter((s) => s.id !== id));
-  };
-
-  // Filter logic
-  const filteredSessions = sessions.filter((s) => {
-    const roleMatch = s.role.toLowerCase().includes(search.toLowerCase());
-    const companyMatch = (s.company_name || "").toLowerCase().includes(search.toLowerCase());
-    const diffMatch = difficultyFilter === "all" || s.difficulty === difficultyFilter;
-    return (roleMatch || companyMatch) && diffMatch;
-  });
 
   if (loading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-        <div style={{ height: "60px", backgroundColor: "#FFFFFF", borderRadius: "12px", border: "1px solid #E4E7EC", width: "100%", animation: "pulse 1.5s infinite" }} />
-        <div style={{ height: "180px", backgroundColor: "#FFFFFF", borderRadius: "12px", border: "1px solid #E4E7EC", width: "100%", animation: "pulse 1.5s infinite" }} />
-        <div style={{ height: "180px", backgroundColor: "#FFFFFF", borderRadius: "12px", border: "1px solid #E4E7EC", width: "100%", animation: "pulse 1.5s infinite" }} />
-        <style jsx>{`
-          @keyframes pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 0.9; }
-            100% { opacity: 0.6; }
-          }
-        `}</style>
+      <div className="section-shell">
+        <div className="page-shell">
+          <div className="hero-panel" style={{ minHeight: "320px" }} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px", maxWidth: "800px", margin: "0 auto" }}>
-      
-      {/* Search & Filters Row */}
-      <div className="card" style={{ display: "flex", gap: "16px", flexWrap: "wrap", padding: "16px 24px" }}>
-        <div style={{ flex: 1, minWidth: "200px" }}>
-          <input
-            type="text"
-            placeholder="Search by role or company..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div style={{ width: "160px" }}>
-          <select
-            value={difficultyFilter}
-            onChange={(e) => setDifficultyFilter(e.target.value)}
-          >
-            <option value="all">All Difficulties</option>
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Sessions Timeline List */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        {filteredSessions.length === 0 ? (
-          <div className="card" style={{ textAlign: "center", padding: "48px 0" }}>
-            <div style={{ fontSize: "2.4rem", marginBottom: "12px" }}>📋</div>
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: "4px" }}>No sessions found</h3>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginBottom: "16px" }}>
-              {search || difficultyFilter !== "all" 
-                ? "Try widening your filter conditions." 
-                : "Conduct mock simulations to populate history lists."}
+    <main className="section-shell">
+      <div className="page-shell">
+        <section className="hero-grid" style={{ alignItems: "stretch" }}>
+          <div className="hero-panel">
+            <div className="section-kicker">History</div>
+            <h1 className="page-title" style={{ marginTop: "18px", maxWidth: "12ch" }}>
+              Interview history in a clean, readable view.
+            </h1>
+            <p className="hero-copy" style={{ marginTop: "14px", maxWidth: "60ch" }}>
+              Review completed sessions, jump back into unfinished practice, and filter by role or difficulty.
             </p>
-            {!search && difficultyFilter === "all" && (
-              <button onClick={() => router.push("/new-interview")} className="btn btn-primary">
-                Start First Mock Session
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "22px" }}>
+              <button className="btn btn-primary" onClick={() => router.push("/new-interview")}>
+                Start interview
               </button>
-            )}
+              <button className="btn btn-secondary" onClick={() => router.push("/learning")}>
+                View learning
+              </button>
+            </div>
           </div>
-        ) : (
-          filteredSessions.map((s) => (
-            <div
-              key={s.id}
-              className="card"
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: "20px"
-              }}
-            >
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                  <h3 style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)" }}>{s.role}</h3>
-                  <span className="badge badge-primary" style={{ fontSize: "0.7rem" }}>{s.company_name || "General"}</span>
-                  <span className={`badge ${
-                    s.difficulty === "hard" ? "badge-error" : s.difficulty === "medium" ? "badge-warning" : "badge-success"
-                  }`} style={{ fontSize: "0.7rem", textTransform: "capitalize" }}>
-                    {s.difficulty}
-                  </span>
-                </div>
-                <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                  Scheduled: {formatDate(s.created_at)} • Duration: {s.duration_minutes} Mins
-                </div>
-              </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                {s.status === "completed" ? (
-                  <>
-                    <button
-                      onClick={() => router.push(`/transcript/${s.id}`)}
-                      className="btn btn-secondary"
-                      style={{ padding: "8px 16px", fontSize: "0.85rem" }}
-                    >
-                      View Report
-                    </button>
-                    <button
-                      onClick={() => handleDeleteMock(s.id)}
-                      className="btn btn-secondary"
-                      style={{ padding: "8px", color: "var(--color-error)", borderColor: "#FCA5A5" }}
-                    >
-                      Delete
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <span className="badge badge-warning" style={{ textTransform: "uppercase" }}>In Progress</span>
-                    <button
-                      onClick={() => router.push(`/interview/${s.id}/voice`)}
-                      className="btn btn-primary"
-                      style={{ padding: "8px 16px", fontSize: "0.85rem" }}
-                    >
-                      Resume
-                    </button>
-                  </>
-                )}
+          <div className="hero-visual" style={{ padding: "28px", minHeight: "320px" }}>
+            <div className="soft-grid">
+              <div className="card" style={{ padding: "18px" }}>
+                <div className="ambient-label">Sessions</div>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: "2.8rem", fontWeight: 700, marginTop: "6px" }}>{counts.total}</div>
+                <p className="section-copy">Total saved practice runs.</p>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "14px" }}>
+                <div className="card" style={{ padding: "16px" }}>
+                  <div className="ambient-label">Completed</div>
+                  <div style={{ fontSize: "2rem", fontWeight: 700, marginTop: "6px" }}>{counts.completed}</div>
+                </div>
+                <div className="card" style={{ padding: "16px" }}>
+                  <div className="ambient-label">In progress</div>
+                  <div style={{ fontSize: "2rem", fontWeight: 700, marginTop: "6px" }}>{counts.active}</div>
+                </div>
               </div>
             </div>
-          ))
-        )}
-      </div>
+          </div>
+        </section>
 
-    </div>
+        <section style={{ marginTop: "28px" }} className="feature-grid">
+          <div className="feature-card feature-card--wide">
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "18px" }}>
+              <input
+                type="text"
+                placeholder="Search by role or company..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{ flex: 1, minWidth: "220px" }}
+              />
+              <select value={difficultyFilter} onChange={(e) => setDifficultyFilter(e.target.value)} style={{ width: "180px" }}>
+                <option value="all">All difficulties</option>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+
+            <div style={{ display: "grid", gap: "14px" }}>
+              {filteredSessions.length === 0 ? (
+                <div className="card" style={{ textAlign: "center", padding: "42px 24px" }}>
+                  <div className="ambient-label">No sessions found</div>
+                  <p className="section-copy" style={{ marginTop: "10px" }}>
+                    {search || difficultyFilter !== "all"
+                      ? "Try a wider search or clear the filter."
+                      : "Start a practice session to build your history."}
+                  </p>
+                </div>
+              ) : (
+                filteredSessions.map((s) => (
+                  <div
+                    key={s.id}
+                    className="card"
+                    style={{ display: "flex", justifyContent: "space-between", gap: "16px", alignItems: "center", flexWrap: "wrap" }}
+                  >
+                    <div style={{ display: "grid", gap: "8px" }}>
+                      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+                        <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1.2rem", fontWeight: 700 }}>{s.role}</h3>
+                        <span className="badge badge-primary">{s.company_name || "General"}</span>
+                        <span className={`badge ${s.difficulty === "hard" ? "badge-error" : s.difficulty === "medium" ? "badge-warning" : "badge-success"}`}>
+                          {s.difficulty}
+                        </span>
+                      </div>
+                      <p className="fine-print">
+                        {formatDate(s.created_at)} · {s.duration_minutes} mins
+                      </p>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      {s.status === "completed" ? (
+                        <button className="btn btn-secondary" onClick={() => router.push(`/transcript/${s.id}`)}>
+                          View report
+                        </button>
+                      ) : (
+                        <button className="btn btn-primary" onClick={() => router.push(`/interview/${s.id}/voice`)}>
+                          Resume
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="feature-card feature-card--tall">
+            <div className="ambient-label">Session summary</div>
+            <h2 className="headline" style={{ marginTop: "10px" }}>Quick scan</h2>
+            <div style={{ display: "grid", gap: "12px", marginTop: "18px" }}>
+              {[
+                { label: "Most recent", value: sessions[0]?.role || "No sessions yet" },
+                { label: "Primary company", value: sessions[0]?.company_name || "N/A" },
+                { label: "Most used difficulty", value: sessions[0]?.difficulty || "N/A" }
+              ].map((item) => (
+                <div key={item.label} className="card" style={{ padding: "16px" }}>
+                  <div className="ambient-label">{item.label}</div>
+                  <div style={{ fontSize: "1.05rem", fontWeight: 700, marginTop: "8px" }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
   );
 }

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+<!-- STITCH_THREEJS_START:ANIMATION_8 class="fixed inset-0 w-full h-full bg-transparent" -->
+<div class="fixed inset-0 w-full h-full bg-transparent" style="display:block;">
+<script src="https://ajax.googleapis.com/ajax/libs/threejs/r125/three.min.js"></script>
+<div id="threejs-container-ANIMATION_8" style="width:100%;height:100%"></div>
+<script>
+(function() {
+  const container = document.getElementById('threejs-container-ANIMATION_8');
+  const devicePixelRatio = window.devicePixelRatio || 1;
+  const width = container.clientWidth || window.innerWidth;
+const height = container.clientHeight || window.innerHeight;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(width, height);
+renderer.setPixelRatio(window.devicePixelRatio);
+container.appendChild(renderer.domElement);
+
+// Lighting for "Luxury AI" feel
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambientLight);
+const pointLight = new THREE.PointLight(0xd4af37, 1.5); // Gold light
+pointLight.position.set(5, 5, 5);
+scene.add(pointLight);
+
+// Abstract 3D "Intelligence" Geometry
+// We'll create a complex wireframe sphere or a series of concentric rings 
+// to represent neural pathways/AI intelligence
+const group = new THREE.Group();
+const material = new THREE.MeshPhongMaterial({
+    color: 0x2d2d2d,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.6
+});
+
+for (let i = 0; i < 3; i++) {
+    const geo = new THREE.IcosahedronGeometry(1.5 + i * 0.5, 1);
+    const mesh = new THREE.Mesh(geo, material);
+    mesh.rotation.x = Math.random() * Math.PI;
+    mesh.rotation.y = Math.random() * Math.PI;
+    group.add(mesh);
+}
+
+// Add some floating "nodes"
+const nodeGeo = new THREE.SphereGeometry(0.05, 16, 16);
+const nodeMat = new THREE.MeshPhongMaterial({ color: 0xd4af37 });
+for (let i = 0; i < 50; i++) {
+    const node = new THREE.Mesh(nodeGeo, nodeMat);
+    const r = 3 + Math.random() * 2;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.random() * Math.PI;
+    node.position.set(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.sin(phi) * Math.sin(theta),
+        r * Math.cos(phi)
+    );
+    group.add(node);
+}
+
+scene.add(group);
+camera.position.z = 6;
+
+function animate() {
+    requestAnimationFrame(animate);
+    group.rotation.y += 0.002;
+    group.rotation.x += 0.001;
+    
+    // Subtle float
+    group.position.y = Math.sin(Date.now() * 0.001) * 0.1;
+    
+    renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+    const w = container.clientWidth || window.innerWidth;
+    const h = container.clientHeight || window.innerHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+});
+
+animate();
+})();
+</script>
+</div>
+<!-- STITCH_THREEJS_END:ANIMATION_8 -->
+</body>
+</html>

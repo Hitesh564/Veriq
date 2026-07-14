@@ -9,7 +9,12 @@ from app.models.interview import UserProfile, StudyPlan
 from app.agents.seed_knowledge_base import KNOWLEDGE_DATA
 from app.agents.profiles import ROLE_PROFILES
 from langchain_google_genai import ChatGoogleGenerativeAI
-from qdrant_client import QdrantClient
+
+try:
+    from qdrant_client import QdrantClient
+except ImportError:
+    QdrantClient = None
+
 
 def get_matching_resources(weak_topics: List[Dict[str, Any]], api_key: str = None) -> List[Dict[str, Any]]:
     """
@@ -24,7 +29,7 @@ def get_matching_resources(weak_topics: List[Dict[str, Any]], api_key: str = Non
     client = None
     collection_name = "global_knowledge_base"
     
-    if api_key and api_key != "placeholder_api_key" and api_key != "your_gemini_api_key_here":
+    if QdrantClient and api_key and api_key != "placeholder_api_key" and api_key != "your_gemini_api_key_here":
         try:
             db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "qdrant_db")
             client = QdrantClient(path=db_path)
@@ -280,6 +285,9 @@ def generate_study_plan(db: Session, user_profile: UserProfile, associated_inter
         if not recommended:
             # Fallback map resources
             for res in resources:
+                res_topic = res.get("topic")
+                topic_stats = mastery_map.get(res_topic) if res_topic else None
+                avg_score = topic_stats.get("average_score", 50) if isinstance(topic_stats, dict) else 50
                 for r in res.get("resources", []):
                     recommended.append({
                         "title": r["title"],
@@ -287,7 +295,7 @@ def generate_study_plan(db: Session, user_profile: UserProfile, associated_inter
                         "estimated_time": res.get("estimated_completion_time", "30 minutes"),
                         "type": res.get("resource_type", "article"),
                         "difficulty": res.get("difficulty_level", "intermediate"),
-                        "why_recommended": f"Matches your weak score of {stats.get('average_score', 50)}%."
+                        "why_recommended": f"Matches your weak score of {avg_score}%."
                     })
                     
         roadmap = data.get("roadmap", [])

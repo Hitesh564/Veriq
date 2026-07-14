@@ -5,8 +5,8 @@ import { AuthProvider } from "./context/AuthContext";
 import AuthModal from "./components/AuthModal";
 
 export const metadata: Metadata = {
-  title: "Veriq AI - Professional AI Mock Interview Platform",
-  description: "Practice realistic technical mock interviews with an adaptive AI coach.",
+  title: "IntervAI | AI Interview Design",
+  description: "A premium AI interview experience with live practice, transcript intelligence, and structured feedback.",
 };
 
 export default function RootLayout({
