@@ -93,6 +93,18 @@ export default function NewInterviewWizard() {
     { value: 30, label: "30 Mins (15 Qs)" }
   ];
   const companies = ["Target Company", "Google", "Amazon", "NVIDIA", "Custom"];
+  const focusModes = [
+    { id: "role", title: "Role-Based", desc: "Master core competencies for a specific job title.", badge: "ROLE", accent: false },
+    { id: "resume", title: "Resume", desc: "Deep-dive into your project history and claims.", badge: "CV", accent: false },
+    { id: "jd", title: "JD Match", desc: "Align with a specific job description.", badge: "JD", accent: false },
+    { id: "resume_jd", title: "Combined", desc: "Use every data point for the richest simulation.", badge: "ALL", accent: true }
+  ] as const;
+
+  const previewBullets = [
+    { title: "Cognitive mapping", body: "Resume, role, and job description signals are merged into one scenario model." },
+    { title: "Voice tuning", body: "Answer pacing and tone can be used to adapt the interviewer’s pace." },
+    { title: "Prediction layer", body: "Difficulty and duration determine the likely depth of follow-ups." }
+  ];
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "resume" | "jd") => {
     const file = e.target.files?.[0];
@@ -274,424 +286,460 @@ export default function NewInterviewWizard() {
 
   if (limitReached) {
     return (
-      <div style={{ maxWidth: "600px", margin: "40px auto", textAlign: "center" }} className="card">
-        <div style={{ fontSize: "3.5rem", marginBottom: "20px" }}>🚀</div>
-        <h2 style={{ fontFamily: "var(--font-outfit)", fontSize: "2rem", fontWeight: 800, color: "var(--text-primary)", marginBottom: "12px" }}>
-          Upgrade to Veriq Pro
-        </h2>
-        <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem", lineHeight: "1.6", marginBottom: "32px" }}>
-          You have completed all 3 of your free mock interview sessions. Upgrade today to unlock unlimited simulations, direct resume matching, and deep technical evaluation insights.
-        </p>
-        
-        <div style={{
-          backgroundColor: "rgba(255, 255, 255, 0.02)",
-          borderRadius: "12px",
-          border: "1px solid var(--border-subtle)",
-          padding: "24px",
-          marginBottom: "32px",
-          textAlign: "left"
-        }}>
-          <h3 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: "16px", color: "var(--text-primary)" }}>Pro Features Include:</h3>
-          <ul style={{ listStyleType: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
-            <li style={{ display: "flex", gap: "10px", fontSize: "0.95rem", color: "var(--text-secondary)" }}>
-              ✅ <strong>Unlimited Mocks:</strong> Conduct unlimited technical, system design, and behavioral interviews.
-            </li>
-            <li style={{ display: "flex", gap: "10px", fontSize: "0.95rem", color: "var(--text-secondary)" }}>
-              ✅ <strong>Advanced ASR & TTS:</strong> High-performance speech processing and streaming byte playback.
-            </li>
-            <li style={{ display: "flex", gap: "10px", fontSize: "0.95rem", color: "var(--text-secondary)" }}>
-              ✅ <strong>Resume & JD Mapping:</strong> Full profile comparison and technical gap blueprints.
-            </li>
-            <li style={{ display: "flex", gap: "10px", fontSize: "0.95rem", color: "var(--text-secondary)" }}>
-              ✅ <strong>Detailed Recruiter Reports:</strong> Exportable performance analytics, readiness match metrics, and feedback.
-            </li>
-          </ul>
-        </div>
-        
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "center" }}>
-          <div style={{ fontSize: "2rem", fontWeight: 800, color: "var(--text-primary)" }}>
-            $19.99 <span style={{ fontSize: "1rem", fontWeight: 500, color: "var(--text-secondary)" }}>/ month</span>
+      <main className="section-shell">
+        <div className="page-shell">
+          <div className="hero-panel soft-raise" style={{ textAlign: "center", maxWidth: "820px", margin: "0 auto" }}>
+            <div className="section-kicker" style={{ margin: "0 auto" }}>
+              Pro required
+            </div>
+            <h1 className="page-title" style={{ marginTop: "18px" }}>
+              Unlock unlimited interview sessions.
+            </h1>
+            <p className="hero-copy" style={{ margin: "14px auto 0", maxWidth: "60ch" }}>
+              You have exhausted the free tier. Upgrade to continue using resume matching, deep reports, and richer simulations.
+            </p>
+
+            <div className="feature-grid" style={{ marginTop: "28px" }}>
+              {[
+                "Unlimited technical and behavioral mocks",
+                "Resume and JD gap analysis",
+                "Detailed recruiter-style reports"
+              ].map((item) => (
+                <div key={item} className="card" style={{ gridColumn: "span 4", textAlign: "left" }}>
+                  <div className="ambient-label">Included</div>
+                  <div style={{ fontWeight: 700, marginTop: "10px" }}>{item}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "center", gap: "12px", flexWrap: "wrap", marginTop: "28px" }}>
+              <div className="subtle-chip">$19.99 / month</div>
+              <button onClick={handleUpgrade} className="btn btn-primary">
+                Upgrade now
+              </button>
+            </div>
           </div>
-          <button
-            onClick={handleUpgrade}
-            className="btn btn-primary"
-            style={{ width: "100%", padding: "14px 28px", fontSize: "1.1rem" }}
-          >
-            Unlock Unlimited Mocks Now
-          </button>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div style={{ maxWidth: "720px", margin: "0 auto" }}>
-      {/* Step Indicators */}
-      {renderStepIndicators()}
+    <main className="section-shell">
+      <div className="page-shell">
+        {error && (
+          <div className="card" style={{ border: "1px solid rgba(185, 79, 79, 0.25)", background: "rgba(255, 255, 255, 0.8)", marginBottom: "18px" }}>
+            <div className="ambient-label" style={{ color: "var(--error)" }}>Error</div>
+            <p className="section-copy" style={{ marginTop: "8px", color: "var(--error)" }}>{error}</p>
+          </div>
+        )}
 
-      {/* Error Alert */}
-      {error && (
-        <div style={{
-          backgroundColor: "#FEF2F2",
-          border: "1px solid #FCA5A5",
-          color: "#991B1B",
-          padding: "12px 16px",
-          borderRadius: "8px",
-          marginBottom: "24px",
-          fontSize: "0.9rem"
-        }}>
-          {error}
-        </div>
-      )}
+        <section className="hero-grid">
+          <div className="hero-panel">
+            <div className="section-kicker">Setup phase</div>
+            <h1 className="page-title" style={{ marginTop: "18px", maxWidth: "12ch" }}>
+              Configure Your Experience
+            </h1>
+            <p className="hero-copy" style={{ marginTop: "14px", maxWidth: "58ch" }}>
+              Select the focus of your simulation. Veriq adapts its cognitive model to match your role, resume, and target job.
+            </p>
+          </div>
 
-      {/* WIZARD CONTAINER */}
-      <div className="card" style={{ padding: "32px" }}>
-        
-        {/* STEP 1: INTERVIEW MODE */}
-        {step === 1 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            <div>
-              <h2 style={{ fontSize: "1.3rem", fontWeight: 700, fontFamily: "var(--font-outfit)", marginBottom: "8px" }}>
-                Select Interview Focus
-              </h2>
-              <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-                Choose how you want to center your mock interview topics.
-              </p>
+          <div className="hero-visual" style={{ padding: "28px", overflow: "hidden" }}>
+            <div style={{ display: "grid", gap: "14px" }}>
+              <div className="card" style={{ padding: "16px", width: "fit-content" }}>
+                <div className="ambient-label">Ready for launch</div>
+                <div style={{ fontWeight: 700, marginTop: "6px" }}>
+                  {mode === "resume_jd" ? "Combined mode" : mode === "jd" ? "JD match" : mode === "resume" ? "Resume mode" : "Role based"}
+                </div>
+              </div>
+              <div style={{ display: "grid", gap: "12px" }}>
+                <div className="card" style={{ minHeight: "120px", padding: "16px" }}>
+                  <div className="ambient-label">Preview signal</div>
+                  <div style={{ display: "flex", gap: "8px", marginTop: "12px", flexWrap: "wrap" }}>
+                    {["Cognitive", "Adaptive", "Editorial", "Gold accents"].map((pill) => (
+                      <span key={pill} className="badge badge-primary">{pill}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="card" style={{ minHeight: "120px", padding: "16px" }}>
+                  <div className="ambient-label">Target role</div>
+                  <div style={{ fontFamily: "var(--font-display)", fontSize: "1.6rem", fontWeight: 700, marginTop: "8px" }}>{role}</div>
+                  <p className="section-copy" style={{ marginTop: "8px" }}>{company === "Custom" ? customCompany || "Custom company" : company}</p>
+                </div>
+              </div>
             </div>
+          </div>
+        </section>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-              {[
-                { id: "role", title: "Role-Based", desc: "Evaluate general skills for your target role.", icon: "💼" },
-                { id: "resume", title: "Resume-Based", desc: "Focus specifically on claims/projects on your resume.", icon: "📄" },
-                { id: "jd", title: "JD-Based", desc: "Align questions directly to a job description.", icon: "📋" },
-                { id: "resume_jd", title: "Resume + JD", desc: "Perform a gap analysis matching your resume to requirements.", icon: "⚡" }
-              ].map((m) => {
-                const isSelected = mode === m.id;
-                return (
-                  <div
-                    key={m.id}
-                    onClick={() => setMode(m.id)}
+        <section style={{ marginTop: "24px" }} className="feature-grid">
+          {focusModes.map((item) => {
+            const isSelected = mode === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setMode(item.id)}
+                className="feature-card"
+                style={{
+                  textAlign: "left",
+                  gridColumn: "span 3",
+                  border: isSelected ? "1px solid rgba(213, 173, 52, 0.45)" : "1px solid var(--border-subtle)",
+                  background: isSelected ? "rgba(255, 255, 255, 0.92)" : "rgba(255, 255, 255, 0.64)",
+                  boxShadow: isSelected ? "0 18px 40px rgba(213, 173, 52, 0.10)" : "var(--shadow-card)",
+                  transform: isSelected ? "translateY(-4px)" : "translateY(0)"
+                }}
+              >
+                <div style={{
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "16px",
+                  display: "grid",
+                  placeItems: "center",
+                  background: isSelected ? "rgba(213, 173, 52, 0.16)" : "rgba(255, 255, 255, 0.86)",
+                  border: "1px solid var(--border-subtle)"
+                }}>
+                  <span
                     style={{
-                      border: isSelected ? "2px solid var(--color-primary)" : "1px solid var(--border-subtle)",
-                      borderRadius: "12px",
-                      padding: "20px",
-                      cursor: "pointer",
-                      backgroundColor: isSelected ? "rgba(213, 173, 52, 0.12)" : "transparent",
-                      transition: "all 0.15s ease"
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "0.74rem",
+                      letterSpacing: "0.14em",
+                      color: isSelected ? "var(--accent-strong)" : "var(--text-secondary)"
                     }}
                   >
-                    <div style={{ fontSize: "1.8rem", marginBottom: "12px" }}>{m.icon}</div>
-                    <h3 style={{ fontSize: "1rem", fontWeight: 700, color: isSelected ? "var(--color-primary)" : "var(--text-primary)", marginBottom: "4px" }}>
-                      {m.title}
-                    </h3>
-                    <p style={{ fontSize: "0.8rem", color: isSelected ? "var(--text-accent)" : "var(--text-secondary)", lineHeight: "1.4" }}>
-                      {m.desc}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "12px" }}>
-              <button
-                onClick={() => setStep(mode === "role" ? 3 : 2)}
-                className="btn btn-primary"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 2: FILE UPLOADS */}
-        {step === 2 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            <div>
-              <h2 style={{ fontSize: "1.3rem", fontWeight: 700, fontFamily: "var(--font-outfit)", marginBottom: "8px" }}>
-                Upload Materials
-              </h2>
-              <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-                Upload PDF files to parse skills, projects, and requirements.
-              </p>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-              {/* Resume Upload Block */}
-              {(mode === "resume" || mode === "resume_jd") && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Candidate Resume (PDF)</label>
-                  <div style={{
-                    border: "2px dashed var(--border-main)",
-                    borderRadius: "8px",
-                    padding: "20px",
-                    textAlign: "center",
-                    backgroundColor: "rgba(255, 255, 255, 0.82)",
-                    position: "relative"
-                  }}>
-                    {parsingResume ? (
-                      <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                        Parsing resume claims...
-                      </div>
-                    ) : resumeText ? (
-                      <div style={{ color: "var(--color-success)", fontSize: "0.85rem", fontWeight: 600 }}>
-                        ✓ Resume parsed successfully ({resumeText.slice(0, 45)}...)
-                      </div>
-                    ) : (
-                      <div>
-                        <input
-                          type="file"
-                          accept="application/pdf"
-                          onChange={(e) => handleFileUpload(e, "resume")}
-                          style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }}
-                        />
-                        <span style={{ fontSize: "0.85rem", color: "var(--color-primary)", fontWeight: 600 }}>Upload File</span>
-                        <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginLeft: "4px" }}>or drag it here</span>
-                      </div>
-                    )}
-                  </div>
+                    {item.badge}
+                  </span>
                 </div>
-              )}
-
-              {/* JD Upload Block */}
-              {(mode === "jd" || mode === "resume_jd") && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Job Description (PDF)</label>
-                  <div style={{
-                    border: "2px dashed var(--border-main)",
-                    borderRadius: "8px",
-                    padding: "20px",
-                    textAlign: "center",
-                    backgroundColor: "rgba(255, 255, 255, 0.82)",
-                    position: "relative"
-                  }}>
-                    {parsingJd ? (
-                      <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                        Parsing job criteria...
-                      </div>
-                    ) : jdText ? (
-                      <div style={{ color: "var(--color-success)", fontSize: "0.85rem", fontWeight: 600 }}>
-                        ✓ Job description parsed successfully ({jdText.slice(0, 45)}...)
-                      </div>
-                    ) : (
-                      <div>
-                        <input
-                          type="file"
-                          accept="application/pdf"
-                          onChange={(e) => handleFileUpload(e, "jd")}
-                          style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }}
-                        />
-                        <span style={{ fontSize: "0.85rem", color: "var(--color-primary)", fontWeight: 600 }}>Upload File</span>
-                        <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginLeft: "4px" }}>or drag it here</span>
-                      </div>
-                    )}
-                  </div>
+                <h3 className="headline" style={{ marginTop: "12px", fontSize: "1.35rem" }}>{item.title}</h3>
+                <p className="section-copy" style={{ marginTop: "8px" }}>{item.desc}</p>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "14px" }}>
+                  <span
+                    className="subtle-chip"
+                    style={{
+                      opacity: isSelected ? 1 : 0,
+                      transform: isSelected ? "translateY(0)" : "translateY(4px)",
+                      transition: "opacity 180ms ease, transform 180ms ease",
+                      padding: "6px 10px"
+                    }}
+                  >
+                    Selected
+                  </span>
                 </div>
-              )}
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "12px" }}>
-              <button onClick={() => setStep(1)} className="btn btn-secondary">
-                Back
               </button>
-              <button
-                onClick={() => setStep(3)}
-                className="btn btn-primary"
-                disabled={parsingResume || parsingJd}
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        )}
+            );
+          })}
+        </section>
 
-        {/* STEP 3: CONFIGURATION */}
-        {step === 3 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            <div>
-              <h2 style={{ fontSize: "1.3rem", fontWeight: 700, fontFamily: "var(--font-outfit)", marginBottom: "8px" }}>
-                Simulation Settings
-              </h2>
-              <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-                Tailor the interview parameters and constraints.
-              </p>
-            </div>
+        <section style={{ marginTop: "28px" }} className="feature-grid">
+          <div className="feature-card feature-card--wide">
+            <div className="section-kicker">Simulation Deep Dive</div>
+            <h2 className="section-title" style={{ marginTop: "14px" }}>
+              Fine-tune the behavioral parameters of your interviewer.
+            </h2>
+            <p className="section-copy" style={{ marginTop: "10px", maxWidth: "56ch" }}>
+              From stress testing to industry standard formality, shape the session around the exact level of challenge you want.
+            </p>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {/* Role Select */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Target Role</label>
-                <select value={role} onChange={(e) => setRole(e.target.value)}>
+            <div style={{ display: "grid", gap: "18px", marginTop: "22px" }}>
+              <div className="card" style={{ padding: "18px" }}>
+                <label className="ambient-label">Target Role</label>
+                <select value={role} onChange={(e) => setRole(e.target.value)} style={{ marginTop: "10px" }}>
                   {roles.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                {/* Difficulty Select */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Difficulty</label>
-                  <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
-                    {difficulties.map((d) => <option key={d} value={d}>{d.toUpperCase()}</option>)}
-                  </select>
+              <div className="card" style={{ padding: "18px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "end" }}>
+                  <label className="ambient-label">Interrogation level</label>
+                  <span className="headline" style={{ fontSize: "1rem" }}>
+                    {difficulty === "easy" ? "Beginner" : difficulty === "medium" ? "Advanced" : "Expert"}
+                  </span>
                 </div>
-
-                {/* Duration Select */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Duration</label>
-                  <select value={duration} onChange={(e) => setDuration(Number(e.target.value))}>
-                    {durations.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
-                  </select>
+                <input
+                  type="range"
+                  min={0}
+                  max={2}
+                  value={difficulties.indexOf(difficulty)}
+                  onChange={(e) => setDifficulty(difficulties[Number(e.target.value)])}
+                  style={{ width: "100%", marginTop: "16px", accentColor: "var(--accent)" }}
+                />
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: "6px" }}>
+                  {["Easy", "Medium", "Hard"].map((label) => (
+                    <span key={label} className="fine-print">{label}</span>
+                  ))}
                 </div>
               </div>
 
-              {/* Company Select */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Company Interview Style</label>
-                <select value={company} onChange={(e) => setCompany(e.target.value)}>
-                  {companies.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
+              <div className="card" style={{ padding: "18px" }}>
+                <label className="ambient-label">Company Style</label>
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "12px" }}>
+                  {companies.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setCompany(c)}
+                      className="btn btn-secondary"
+                      style={{
+                        background: company === c ? "rgba(213, 173, 52, 0.12)" : "rgba(255, 255, 255, 0.7)",
+                        borderColor: company === c ? "rgba(213, 173, 52, 0.45)" : "var(--border-subtle)"
+                      }}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {company === "Custom" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Custom Company Name</label>
-                  <input
-                    type="text"
-                    placeholder="Enter company name..."
-                    value={customCompany}
-                    onChange={(e) => setCustomCompany(e.target.value)}
-                  />
+              {(mode === "resume" || mode === "resume_jd" || mode === "jd") && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "14px" }}>
+                  {(mode === "resume" || mode === "resume_jd") && (
+                    <div className="card" style={{ padding: "18px" }}>
+                      <div className="ambient-label">Resume upload</div>
+                      <div style={{ position: "relative", border: "1px dashed var(--border-main)", borderRadius: "18px", padding: "18px", marginTop: "12px", minHeight: "120px", display: "grid", placeItems: "center" }}>
+                        <input type="file" accept="application/pdf" onChange={(e) => handleFileUpload(e, "resume")} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
+                        {parsingResume ? (
+                          <span className="section-copy">Parsing resume...</span>
+                        ) : resumeText ? (
+                          <span className="badge badge-success">Resume parsed</span>
+                        ) : (
+                          <div style={{ textAlign: "center" }}>
+                            <span className="material-symbols-outlined" style={{ color: "var(--accent)", fontSize: 28 }}>upload</span>
+                            <div className="fine-print" style={{ marginTop: "8px" }}>Upload your resume</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {(mode === "jd" || mode === "resume_jd") && (
+                    <div className="card" style={{ padding: "18px" }}>
+                      <div className="ambient-label">JD upload</div>
+                      <div style={{ position: "relative", border: "1px dashed var(--border-main)", borderRadius: "18px", padding: "18px", marginTop: "12px", minHeight: "120px", display: "grid", placeItems: "center" }}>
+                        <input type="file" accept="application/pdf" onChange={(e) => handleFileUpload(e, "jd")} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
+                        {parsingJd ? (
+                          <span className="section-copy">Parsing job description...</span>
+                        ) : jdText ? (
+                          <span className="badge badge-success">JD parsed</span>
+                        ) : (
+                          <div style={{ textAlign: "center" }}>
+                            <span className="material-symbols-outlined" style={{ color: "var(--accent)", fontSize: 28 }}>upload_file</span>
+                            <div className="fine-print" style={{ marginTop: "8px" }}>Upload a job description</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "12px" }}>
-              <button
-                onClick={() => setStep(mode === "role" ? 1 : 2)}
-                className="btn btn-secondary"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleMoveToReview}
-                className="btn btn-primary"
-                disabled={loadingBlueprint}
-              >
-                {loadingBlueprint ? "Analyzing Profile..." : "Analyze & Review"}
-              </button>
-            </div>
           </div>
-        )}
 
-        {/* STEP 4: BLUEPRINT REVIEW */}
-        {step === 4 && preparedSession && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            <div>
-              <h2 style={{ fontSize: "1.3rem", fontWeight: 700, fontFamily: "var(--font-outfit)", marginBottom: "8px" }}>
-                Pre-Interview Report
-              </h2>
-              <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-                Review the parsed summaries and objectives scheduled for this session.
+          <div className="feature-card feature-card--tall">
+            <div className="card" style={{ padding: "16px", minHeight: "280px", position: "relative", overflow: "hidden" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div className="ambient-label">Simulation preview</div>
+                <span className="badge badge-primary">Live</span>
+              </div>
+              <div style={{ marginTop: "16px", borderRadius: "22px", border: "1px solid var(--border-subtle)", background: "linear-gradient(180deg, rgba(255,255,255,0.92), rgba(247,242,233,0.92))", padding: "12px", minHeight: "220px", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)" }}>
+                <div style={{ display: "flex", gap: "6px", marginBottom: "12px" }}>
+                  <span style={{ width: "10px", height: "10px", borderRadius: "999px", background: "#d9c7a3" }} />
+                  <span style={{ width: "10px", height: "10px", borderRadius: "999px", background: "#f0e5cf" }} />
+                  <span style={{ width: "10px", height: "10px", borderRadius: "999px", background: "#ffffff", border: "1px solid var(--border-subtle)" }} />
+                </div>
+                <div className="card" style={{ padding: "14px", minHeight: "180px", position: "relative", overflow: "hidden" }}>
+                  <div style={{ display: "grid", gap: "12px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "center" }}>
+                      <div>
+                        <div style={{ fontFamily: "var(--font-display)", fontSize: "1.3rem", fontWeight: 700 }}>Veriq Preview</div>
+                        <div className="fine-print">A cleaner meaning-first replacement for the incorrect image</div>
+                      </div>
+                      <div className="subtle-chip">01</div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                      <div className="card" style={{ padding: "12px" }}>
+                        <div className="ambient-label">Signal</div>
+                        <div style={{ fontWeight: 700, marginTop: "8px" }}>{mode === "resume_jd" ? "Combined" : mode === "jd" ? "JD match" : mode === "resume" ? "Resume" : "Role"}</div>
+                      </div>
+                      <div className="card" style={{ padding: "12px" }}>
+                        <div className="ambient-label">Difficulty</div>
+                        <div style={{ fontWeight: 700, marginTop: "8px" }}>{difficulty.toUpperCase()}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: "grid", gap: "10px" }}>
+                      {previewBullets.map((item) => (
+                        <div key={item.title} className="card" style={{ padding: "12px", borderLeft: "3px solid var(--accent)" }}>
+                          <div style={{ fontWeight: 700 }}>{item.title}</div>
+                          <p className="fine-print" style={{ marginTop: "6px" }}>{item.body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card ai-border" style={{ marginTop: "14px", padding: "18px" }}>
+              <div className="ambient-label" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 18, color: "var(--accent)" }}>auto_awesome</span>
+                AI Model Tuning
+              </div>
+              <p className="section-copy" style={{ marginTop: "10px" }}>
+                Based on <strong>{mode === "resume_jd" ? "Combined" : mode === "jd" ? "JD Match" : mode === "resume" ? "Resume" : "Role-Based"}</strong> and <strong>{difficulty.toUpperCase()}</strong>, Veriq will prioritize the right follow-ups and estimate a session length of roughly <strong>{duration * 2 + 35} minutes</strong>.
               </p>
             </div>
+          </div>
+        </section>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-              {/* Gap Analysis Summary */}
-              {preparedSession.gap_analysis_json && (
-                <div style={{ padding: "16px", borderRadius: "12px", border: "1px solid var(--border-subtle)", backgroundColor: "rgba(255, 255, 255, 0.82)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                    <h3 style={{ fontSize: "0.95rem", fontWeight: 700 }}>Job-Specific Readiness</h3>
-                    {(() => {
-                      const gap = JSON.parse(preparedSession.gap_analysis_json);
-                      const readiness = gap.job_readiness || {};
-                      const score = readiness.estimated_readiness_score || 0;
-                      return (
-                        <span className={`badge ${score >= 70 ? 'badge-success' : 'badge-warning'}`} style={{ fontFamily: "var(--font-mono)" }}>
-                          {score}% Ready
-                        </span>
-                      );
-                    })()}
+        <section style={{ marginTop: "28px" }} className="feature-grid">
+          <div className="feature-card feature-card--wide">
+            <div className="section-kicker">The Intelligence Preview</div>
+            <h2 className="section-title" style={{ marginTop: "14px" }}>
+              See how the model processes your inputs to create a bespoke simulation.
+            </h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "14px", marginTop: "18px" }}>
+              {[
+                { title: "Cognitive Mapping", icon: "psychology_alt", body: "We map your resume and role against interview patterns to surface likely gaps." },
+                { title: "Aura Voice Synthesis", icon: "graphic_eq", body: "A smoother speaking cadence keeps the session conversational and composed." },
+                { title: "Predictive Analytics", icon: "query_stats", body: "The model estimates interview depth, focus areas, and confidence range." }
+              ].map((item) => (
+                <div key={item.title} className="card" style={{ padding: "18px", textAlign: "center" }}>
+                  <div style={{ width: "56px", height: "56px", margin: "0 auto", borderRadius: "18px", background: "rgba(213, 173, 52, 0.12)", display: "grid", placeItems: "center" }}>
+                    <span className="material-symbols-outlined" style={{ color: "var(--primary)" }}>{item.icon}</span>
                   </div>
-                  {(() => {
-                    const gap = JSON.parse(preparedSession.gap_analysis_json);
-                    const readiness = gap.job_readiness || {};
-                    return (
-                      <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", lineHeight: "1.4" }}>
-                        {readiness.match_rationale || "Ready to evaluate matching credentials against parameters."}
-                      </p>
-                    );
-                  })()}
+                  <h3 className="headline" style={{ marginTop: "12px", fontSize: "1.2rem" }}>{item.title}</h3>
+                  <p className="section-copy" style={{ marginTop: "8px" }}>{item.body}</p>
                 </div>
-              )}
-
-              {/* Objectives List */}
-              {preparedSession.interview_objectives_json && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <h3 style={{ fontSize: "0.85rem", fontWeight: 600 }}>Scheduled Objectives</h3>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                    {(() => {
-                      const objectives = JSON.parse(preparedSession.interview_objectives_json);
-                      const mustList = Object.keys(objectives.must_verify || {});
-                      const niceList = Object.keys(objectives.nice_to_verify || {});
-                      return (
-                        <>
-                          {mustList.map((obj) => (
-                            <span key={obj} className="badge badge-primary" style={{ fontFamily: "var(--font-mono)" }}>
-                              Must: {obj}
-                            </span>
-                          ))}
-                          {niceList.map((obj) => (
-                            <span key={obj} className="badge" style={{ backgroundColor: "rgba(16, 185, 129, 0.12)", color: "var(--color-success)", fontFamily: "var(--font-mono)" }}>
-                              Nice: {obj}
-                            </span>
-                          ))}
-                        </>
-                      );
-                    })()}
+              ))}
+            </div>
+            <div className="hero-visual" style={{ minHeight: "260px", marginTop: "18px", padding: "22px" }}>
+              <div className="card" style={{ maxWidth: "560px", margin: "0 auto", padding: "18px" }}>
+                <div className="ambient-label">Live settings snapshot</div>
+                <div style={{ display: "grid", gap: "12px", marginTop: "12px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "10px" }}>
+                    {[
+                      { label: "Role", value: role },
+                      { label: "Difficulty", value: difficulty },
+                      { label: "Duration", value: `${duration} min` },
+                      { label: "Company", value: company }
+                    ].map((item) => (
+                      <div key={item.label} className="card" style={{ padding: "12px" }}>
+                        <div className="ambient-label">{item.label}</div>
+                        <div style={{ fontWeight: 700, marginTop: "8px" }}>{item.value}</div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              )}
-
-              {/* Param Grid Summary */}
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "12px",
-                padding: "16px",
-                borderRadius: "8px",
-                backgroundColor: "rgba(255, 255, 255, 0.82)",
-                fontSize: "0.8rem"
-              }}>
-                <div>
-                  <span style={{ color: "var(--text-muted)" }}>Target Role:</span>
-                  <span style={{ fontWeight: 600, marginLeft: "4px", color: "var(--text-primary)" }}>{preparedSession.role}</span>
-                </div>
-                <div>
-                  <span style={{ color: "var(--text-muted)" }}>Difficulty:</span>
-                  <span style={{ fontWeight: 600, marginLeft: "4px", textTransform: "capitalize", color: "var(--text-primary)" }}>{preparedSession.difficulty}</span>
-                </div>
-                <div>
-                  <span style={{ color: "var(--text-muted)" }}>Interview Style:</span>
-                  <span style={{ fontWeight: 600, marginLeft: "4px", color: "var(--text-primary)" }}>{preparedSession.company_name}</span>
-                </div>
-                <div>
-                  <span style={{ color: "var(--text-muted)" }}>Duration:</span>
-                  <span style={{ fontWeight: 600, marginLeft: "4px", color: "var(--text-primary)" }}>{preparedSession.max_question_count} Questions</span>
+                  <div className="card" style={{ padding: "14px", borderLeft: "3px solid var(--accent)" }}>
+                    <div className="ambient-label">Analysis insight</div>
+                    <p className="section-copy" style={{ marginTop: "8px" }}>
+                      The current setup points toward a balanced but challenging session with a strong emphasis on practical depth and follow-up pressure.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "12px" }}>
-              <button onClick={() => setStep(3)} className="btn btn-secondary">
-                Back
-              </button>
-              <button onClick={handleStartInterview} className="btn btn-primary">
-                Start Interview Session
+          <div className="feature-card feature-card--tall">
+            <div className="card" style={{ padding: "18px" }}>
+              <div className="ambient-label">Ready for launch</div>
+              <h3 className="headline" style={{ marginTop: "10px" }}>Start analysis when the configuration feels right.</h3>
+              <p className="section-copy" style={{ marginTop: "8px" }}>
+                Veriq will prepare the session blueprint, then take you into the live interview room.
+              </p>
+              <button onClick={handleMoveToReview} className="btn btn-primary" disabled={loadingBlueprint} style={{ width: "100%", marginTop: "18px" }}>
+                {loadingBlueprint ? "Analyzing..." : "Start analysis"}
               </button>
             </div>
-          </div>
-        )}
 
+            <div className="card" style={{ marginTop: "14px", padding: "18px" }}>
+              <div className="ambient-label">Current selection</div>
+              <div style={{ display: "grid", gap: "10px", marginTop: "12px" }}>
+                <div className="subtle-chip">Mode: {mode === "resume_jd" ? "Combined" : mode === "jd" ? "JD Match" : mode === "resume" ? "Resume" : "Role-Based"}</div>
+                <div className="subtle-chip">Role: {role}</div>
+                <div className="subtle-chip">Difficulty: {difficulty}</div>
+                <div className="subtle-chip">Duration: {duration} mins</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {preparedSession && (
+          <section style={{ marginTop: "28px" }} className="feature-grid">
+            <div className="feature-card feature-card--wide">
+              <div className="section-kicker">Pre-interview report</div>
+              <h2 className="section-title" style={{ marginTop: "14px" }}>Review the blueprint before starting the session.</h2>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "14px", marginTop: "18px" }}>
+                <div className="card" style={{ padding: "16px" }}>
+                  <div className="ambient-label">Target role</div>
+                  <div style={{ fontWeight: 700, marginTop: "8px" }}>{preparedSession.role}</div>
+                </div>
+                <div className="card" style={{ padding: "16px" }}>
+                  <div className="ambient-label">Difficulty</div>
+                  <div style={{ fontWeight: 700, marginTop: "8px", textTransform: "capitalize" }}>{preparedSession.difficulty}</div>
+                </div>
+                <div className="card" style={{ padding: "16px" }}>
+                  <div className="ambient-label">Interview style</div>
+                  <div style={{ fontWeight: 700, marginTop: "8px" }}>{preparedSession.company_name}</div>
+                </div>
+                <div className="card" style={{ padding: "16px" }}>
+                  <div className="ambient-label">Questions</div>
+                  <div style={{ fontWeight: 700, marginTop: "8px" }}>{preparedSession.max_question_count}</div>
+                </div>
+              </div>
+              <button onClick={handleStartInterview} className="btn btn-primary" style={{ marginTop: "18px" }}>
+                Start interview session
+              </button>
+            </div>
+            <div className="feature-card feature-card--tall">
+              <div className="ambient-label">Objectives</div>
+              <div style={{ display: "grid", gap: "12px", marginTop: "14px" }}>
+                {preparedSession.interview_objectives_json && (() => {
+                  const objectives = JSON.parse(preparedSession.interview_objectives_json);
+                  const mustList = Object.keys(objectives.must_verify || {});
+                  const niceList = Object.keys(objectives.nice_to_verify || {});
+                  return (
+                    <>
+                      {mustList.map((obj: string) => <span key={obj} className="badge badge-primary">Must: {obj}</span>)}
+                      {niceList.map((obj: string) => <span key={obj} className="badge badge-success">Nice: {obj}</span>)}
+                    </>
+                  );
+                })()}
+              </div>
+              {preparedSession.gap_analysis_json && (
+                <div className="card" style={{ marginTop: "14px", padding: "16px", borderLeft: "3px solid var(--accent)" }}>
+                  <div className="ambient-label">Match rationale</div>
+                  <p className="section-copy" style={{ marginTop: "8px" }}>
+                    {(() => {
+                      const gap = JSON.parse(preparedSession.gap_analysis_json);
+                      return gap?.job_readiness?.match_rationale || "Ready to evaluate matching credentials against parameters.";
+                    })()}
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
       </div>
-    </div>
+      <style jsx>{`
+        @keyframes drift {
+          0% { transform: translate3d(0, 0, 0) scale(1); }
+          50% { transform: translate3d(0, -8px, 0) scale(1.01); }
+          100% { transform: translate3d(0, 0, 0) scale(1); }
+        }
+        @keyframes glowPulse {
+          0%, 100% { box-shadow: 0 0 0 rgba(213,173,52,0); }
+          50% { box-shadow: 0 0 30px rgba(213,173,52,0.14); }
+        }
+        .hero-visual {
+          animation: drift 10s ease-in-out infinite;
+        }
+        .feature-card {
+          transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+        }
+        .feature-card:hover {
+          transform: translateY(-4px);
+          animation: glowPulse 2s ease-in-out infinite;
+        }
+      `}</style>
+    </main>
   );
 }

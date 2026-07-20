@@ -718,6 +718,57 @@ export default function VoiceInterviewRoom() {
     );
   };
 
+  const phaseSteps = ["INTRODUCTION", "TECHNICAL", "BEHAVIORAL", "Q&A"];
+  const activePhaseIndex = Math.max(0, phaseSteps.indexOf(phase));
+  const progressPercent = maxQuestionCount > 0 ? Math.min(100, Math.round((questionCount / maxQuestionCount) * 100)) : 0;
+  const confidenceScore = Math.min(98, Math.max(72, 70 + questionCount * 4 + (voiceState === "AI_SPEAKING" ? 3 : 0)));
+  const depthScore = Math.min(96, Math.max(60, 58 + questionCount * 6));
+  const transcriptTone =
+    voiceState === "AI_SPEAKING"
+      ? "Veriq is speaking"
+      : voiceState === "LISTENING"
+        ? "Waiting for your answer"
+        : voiceState === "THINKING"
+          ? "Thinking through the next question"
+          : voiceState === "TRANSCRIBING"
+            ? "Transcribing your response"
+            : voiceState === "CONNECTING"
+              ? "Preparing microphone"
+              : voiceState === "ENDED"
+                ? "Session finished"
+                : "Ready for the first prompt";
+  const transcriptHint =
+    voiceState === "AI_SPEAKING"
+      ? "Listen closely. The next follow-up is being delivered now."
+      : voiceState === "LISTENING"
+        ? "Answer naturally. The room is capturing your response."
+        : voiceState === "THINKING"
+          ? "The model is shaping a follow-up based on your answer."
+          : "The room will wake up when the session starts.";
+  const topicPills = [
+    { label: "System Design", active: phase === "TECHNICAL" || phase === "Q&A" || questionCount > 0 },
+    { label: "Scalability", active: progressPercent > 20 },
+    { label: "Communication", active: phase === "BEHAVIORAL" || phase === "Q&A" || progressPercent > 35 },
+    { label: "Hiring Signals", active: callStatus === "active" }
+  ];
+  const depthBars = [42, 54, 66, 72, 82, 88];
+
+  const renderVoiceStage = () => {
+    const stateClass = voiceState.toLowerCase();
+
+    return (
+      <div className={`voice-core voice-core--${stateClass}`}>
+        <div className="voice-core__ring voice-core__ring--outer" />
+        <div className="voice-core__ring voice-core__ring--inner" />
+        <div className="voice-core__center">
+          <div className="voice-core__glow" />
+          <div className="voice-core__dot" />
+        </div>
+        <div className="voice-core__pulse" />
+      </div>
+    );
+  };
+
   return (
     <div className="voice-room-container">
       
@@ -794,14 +845,16 @@ export default function VoiceInterviewRoom() {
         </header>
 
         {/* Focus visualizer */}
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="voice-room-stage">
+          <div className="voice-room-stage__visual">
           {error ? (
           <div style={{ backgroundColor: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.24)", color: "var(--color-error)", padding: "16px", borderRadius: "12px", maxWidth: "480px" }}>
               {error}
             </div>
           ) : (
-            renderOrb()
+            renderVoiceStage()
           )}
+          </div>
         </div>
 
         {/* Controls footer */}
@@ -845,14 +898,12 @@ export default function VoiceInterviewRoom() {
       {/* 3. RIGHT COLUMN: Metrics & Session Outline */}
       <div className="voice-right-col">
         {/* Progress bar */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <h3 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-            Progress
-          </h3>
-          <div style={{ fontSize: "1.8rem", fontWeight: 800, fontFamily: "var(--font-mono)", color: "var(--text-primary)" }}>
-            {questionCount} <span style={{ fontSize: "1rem", fontWeight: 500, color: "var(--text-muted)" }}>/ {maxQuestionCount} Qs</span>
+        <div className="telemetry-progress">
+          <div className="telemetry-progress__head">
+            <h3>Progress</h3>
+            <span>{questionCount}/{maxQuestionCount}</span>
           </div>
-          <div style={{ width: "100%", height: "6px", borderRadius: "3px", backgroundColor: "rgba(28, 23, 18, 0.08)", overflow: "hidden" }}>
+          <div className="telemetry-progress__bar">
             <div style={{
               width: `${(questionCount / maxQuestionCount) * 100}%`,
               height: "100%",
@@ -949,6 +1000,338 @@ export default function VoiceInterviewRoom() {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
+        .voice-room-container {
+          display: grid;
+          grid-template-columns: minmax(280px, 0.86fr) minmax(420px, 1.28fr) minmax(240px, 0.72fr);
+          gap: 18px;
+          min-height: 100vh;
+          padding: 18px;
+          background:
+            radial-gradient(circle at 50% 8%, rgba(255, 255, 255, 0.94), transparent 24%),
+            linear-gradient(180deg, rgba(247, 242, 233, 0.96), rgba(244, 239, 229, 0.98));
+        }
+        .voice-left-col,
+        .voice-right-col,
+        .voice-center-col {
+          min-height: calc(100vh - 36px);
+          border-radius: 28px;
+          overflow: hidden;
+        }
+        .voice-left-col,
+        .voice-right-col {
+          padding: 0 !important;
+          background: rgba(255, 253, 249, 0.82) !important;
+          border: 1px solid var(--border-subtle) !important;
+          backdrop-filter: blur(18px);
+          box-shadow: var(--shadow-card);
+          padding-bottom: 18px;
+        }
+        .voice-left-col > *,
+        .voice-right-col > * {
+          padding-left: 24px;
+          padding-right: 24px;
+        }
+        .voice-left-col > h3,
+        .voice-right-col > div:first-child,
+        .voice-right-col > div:nth-child(2),
+        .voice-right-col > div:nth-child(3),
+        .voice-right-col > div:nth-child(4) {
+          padding-top: 18px;
+        }
+        .voice-left-col > div {
+          padding-bottom: 24px;
+        }
+        .voice-center-col {
+          background:
+            radial-gradient(circle at 50% 32%, rgba(255, 214, 111, 0.12), transparent 32%),
+            linear-gradient(180deg, rgba(255, 253, 249, 0.94), rgba(244, 239, 229, 0.84));
+          border: 1px solid var(--border-subtle);
+          backdrop-filter: blur(18px);
+          box-shadow: var(--shadow-card);
+          display: flex;
+          flex-direction: column;
+        }
+        .voice-center-col > header {
+          border-bottom: 1px solid var(--border-subtle) !important;
+          background: rgba(255, 255, 255, 0.56) !important;
+          backdrop-filter: blur(10px);
+        }
+        .voice-center-col > footer {
+          border-top: 1px solid var(--border-subtle) !important;
+          background: rgba(255, 255, 255, 0.56) !important;
+          backdrop-filter: blur(10px);
+        }
+        .voice-room-stage {
+          flex: 1;
+          display: grid;
+          place-items: center;
+          padding: 20px;
+          background: linear-gradient(180deg, rgba(255, 253, 249, 0.95), rgba(247, 242, 233, 0.96));
+          overflow: hidden;
+        }
+        .voice-room-stage__visual {
+          width: min(100%, 240px);
+          height: min(100%, 240px);
+          display: grid;
+          place-items: center;
+          position: relative;
+          border-radius: 999px;
+          background: transparent;
+        }
+        .voice-core {
+          position: relative;
+          width: 180px;
+          height: 180px;
+          display: grid;
+          place-items: center;
+          isolation: isolate;
+        }
+        .voice-core__ambient,
+        .voice-core__ring,
+        .voice-core__pulse,
+        .voice-core__center {
+          position: absolute;
+        }
+        .voice-core__ring {
+          border-radius: 50%;
+          border: 1px solid rgba(155, 118, 18, 0.12);
+        }
+        .voice-core__ring--outer {
+          inset: 0;
+        }
+        .voice-core__ring--inner {
+          inset: 16%;
+          border-color: rgba(155, 118, 18, 0.22);
+        }
+        .voice-core__center {
+          inset: 32%;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
+          background: radial-gradient(circle, rgba(255, 241, 195, 0.9), rgba(213, 173, 52, 0.2) 48%, rgba(255, 255, 255, 0) 74%);
+        }
+        .voice-core__glow {
+          position: absolute;
+          inset: -12px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(213, 173, 52, 0.34), transparent 68%);
+          filter: blur(6px);
+          animation: pulse-core 2.4s ease-in-out infinite;
+        }
+        .voice-core__dot {
+          width: 44%;
+          height: 44%;
+          border-radius: 50%;
+          background: radial-gradient(circle, #fff5c9 0%, #e8be45 38%, #926a0d 72%, #1a1712 100%);
+          box-shadow: 0 0 24px rgba(213, 173, 52, 0.24), inset 0 0 16px rgba(255, 247, 196, 0.22);
+          animation: pulse-core 1.8s ease-in-out infinite;
+        }
+        .voice-core__ambient {
+          inset: 18%;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(213, 173, 52, 0.12), transparent 68%);
+          filter: blur(16px);
+          animation: breathe 5.8s ease-in-out infinite;
+          z-index: 0;
+        }
+        .voice-core__ambient--right {
+          inset: 20%;
+          opacity: 0.62;
+          animation-delay: 1.1s;
+        }
+        .voice-core__pulse {
+          inset: 28%;
+          border-radius: 50%;
+          border: 1px solid rgba(255, 228, 152, 0.22);
+          box-shadow: 0 0 0 14px rgba(213, 173, 52, 0.04);
+          animation: pulse-core 2.8s ease-in-out infinite;
+          z-index: 2;
+        }
+        .voice-core--speaking .voice-core__dot {
+          transform: scale(1.06);
+        }
+        .voice-core--listening .voice-core__dot {
+          transform: scale(0.98);
+        }
+        .voice-core--thinking .voice-core__dot,
+        .voice-core--transcribing .voice-core__dot {
+          animation: pulse-core 1.2s ease-in-out infinite;
+        }
+        .voice-core--speaking .voice-core__pulse {
+          animation-duration: 1.2s;
+        }
+        .voice-core--speaking .voice-core__center {
+          transform: scale(1.03);
+        }
+        .voice-core--listening .voice-core__center {
+          transform: scale(0.98);
+        }
+        .voice-core--thinking .voice-core__center,
+        .voice-core--transcribing .voice-core__center {
+          animation: pulse-core 1.4s ease-in-out infinite;
+        }
+        .voice-core--thinking .voice-core__ring--outer,
+        .voice-core--transcribing .voice-core__ring--outer {
+          animation: spin 14s linear infinite reverse;
+        }
+        .voice-core--ended {
+          opacity: 0.74;
+        }
+        .telemetry-card {
+          padding: 16px;
+          border-radius: 22px;
+          border: 1px solid var(--border-subtle);
+          background: rgba(255, 255, 255, 0.66);
+        }
+        .telemetry-progress {
+          padding: 14px 16px;
+          border-radius: 18px;
+          border: 1px solid var(--border-subtle);
+          background: rgba(255, 255, 255, 0.64);
+          display: grid;
+          gap: 10px;
+        }
+        .telemetry-progress__head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .telemetry-progress__head h3 {
+          font-size: 0.78rem;
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          color: var(--text-muted);
+          font-weight: 800;
+        }
+        .telemetry-progress__head span {
+          font-size: 0.8rem;
+          font-family: var(--font-mono);
+          color: var(--text-primary);
+          font-weight: 700;
+        }
+        .telemetry-progress__bar {
+          width: 100%;
+          height: 8px;
+          border-radius: 999px;
+          background: rgba(28, 23, 18, 0.08);
+          overflow: hidden;
+        }
+        .telemetry-card__row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 10px;
+        }
+        .telemetry-card__row--compact {
+          align-items: center;
+        }
+        .telemetry-card__label {
+          color: var(--text-muted);
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          font-weight: 800;
+        }
+        .telemetry-card strong {
+          display: block;
+          margin-top: 4px;
+          font-size: 1.35rem;
+          font-family: var(--font-mono);
+          color: var(--text-primary);
+        }
+        .telemetry-card__hint,
+        .telemetry-card__note {
+          margin-top: 10px;
+          color: var(--text-secondary);
+          line-height: 1.55;
+        }
+        .telemetry-bar {
+          width: 100%;
+          height: 10px;
+          border-radius: 999px;
+          background: rgba(28, 23, 18, 0.08);
+          overflow: hidden;
+        }
+        .telemetry-bar span {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+          background: linear-gradient(90deg, #d9bd67, var(--accent-strong));
+          box-shadow: 0 0 18px rgba(155, 118, 18, 0.24);
+        }
+        .telemetry-bar--gold span {
+          background: linear-gradient(90deg, #f0d889, #9b7612);
+        }
+        .pill-cloud {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .pill-cloud__pill {
+          padding: 8px 12px;
+          border-radius: 999px;
+          border: 1px solid var(--border-subtle);
+          color: var(--text-muted);
+          font-size: 0.76rem;
+          font-weight: 700;
+          background: rgba(255, 255, 255, 0.66);
+        }
+        .pill-cloud__pill.is-active {
+          color: var(--accent-strong);
+          border-color: rgba(155, 118, 18, 0.22);
+          background: rgba(213, 173, 52, 0.12);
+        }
+        .depth-bars {
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          align-items: end;
+          gap: 8px;
+          height: 88px;
+          margin-top: 10px;
+        }
+        .depth-bars span {
+          display: block;
+          border-radius: 999px 999px 12px 12px;
+          background: linear-gradient(180deg, #d6b24b, #8f6a0c);
+          box-shadow: 0 6px 14px rgba(155, 118, 18, 0.12);
+        }
+        .telemetry-card--summary {
+          display: grid;
+          gap: 12px;
+        }
+        .telemetry-card__action {
+          width: 100%;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes breathe {
+          0%, 100% { transform: scale(1); opacity: 0.76; }
+          50% { transform: scale(1.04); opacity: 1; }
+        }
+        @keyframes listen-shift {
+          0%, 100% { filter: saturate(1); }
+          50% { filter: saturate(1.12) brightness(1.04); }
+        }
+        @keyframes speak-shift {
+          0%, 100% { transform: translateX(-50%) translateY(0) scale(1); }
+          50% { transform: translateX(-50%) translateY(0.6%) scale(1.03); }
+        }
+        @keyframes pulse-core {
+          0%, 100% { transform: scale(0.97); opacity: 0.45; }
+          50% { transform: scale(1.04); opacity: 0.82; }
+        }
+        @keyframes wave-flow {
+          0%, 100% { opacity: 0.36; transform: translateY(-50%) scaleX(0.92); }
+          50% { opacity: 1; transform: translateY(-50%) scaleX(1); }
+        }
+        @keyframes transcript-pulse {
+          0%, 100% { box-shadow: 0 0 0 rgba(213, 173, 52, 0); }
+          50% { box-shadow: 0 0 26px rgba(213, 173, 52, 0.12); }
+        }
         @media (max-width: 1024px) {
           .voice-room-container {
             grid-template-columns: 280px 1fr;
@@ -963,6 +1346,17 @@ export default function VoiceInterviewRoom() {
           }
           .voice-left-col {
             display: none;
+          }
+          .voice-room-stage {
+            padding: 12px;
+          }
+          .voice-room-stage__visual {
+            width: 100%;
+            height: auto;
+            min-height: 340px;
+          }
+          .voice-core {
+            width: min(100%, 420px);
           }
         }
       `}</style>

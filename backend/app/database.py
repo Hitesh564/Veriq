@@ -10,8 +10,7 @@ engine = create_engine(DATABASE_URL, echo=True, connect_args=connect_args)
 
 def init_db():
     # Lazy import to avoid circular dependency issues
-    from app.models.interview import Interview, Transcript, EvaluationReport, UserProfile, StudyPlan
-    from app.subscriptions.models import Plan, Subscription, Payment, UserUsage
+    from app.subscriptions.models import Plan
     SQLModel.metadata.create_all(engine)
     
     # Seed default plans if not already present

@@ -1,7 +1,7 @@
 import hashlib
 import time
 import threading
-from typing import Any, Callable, Dict, Optional, Tuple, List
+from typing import Any, Dict, Optional, Tuple
 
 class ComputationCache:
     def __init__(self):

@@ -108,7 +108,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             <div className="brand-mark">I</div>
             <div style={{ textAlign: "left" }}>
               <div style={{ fontFamily: "var(--font-display)", fontSize: "1.2rem", fontWeight: 700, letterSpacing: "-0.05em" }}>
-                IntervAI
+                Veriq
               </div>
               <div className="fine-print">AI co-pilot active</div>
             </div>
@@ -136,11 +136,13 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             <button
               type="button"
               onClick={() => setAccountOpen((prev) => !prev)}
-              className="btn btn-secondary"
-              style={{ minWidth: "42px", width: "42px", padding: 0 }}
+              className="btn btn-secondary icon-avatar-button"
               aria-label="Account menu"
             >
-              <span className="material-symbols-outlined" style={{ fontSize: 22 }}>account_circle</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+                <circle cx="12" cy="8" r="3.25" stroke="currentColor" strokeWidth="1.7" />
+                <path d="M5.5 19c1.7-3 4-4.5 6.5-4.5S16.8 16 18.5 19" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+              </svg>
             </button>
             <button
               type="button"

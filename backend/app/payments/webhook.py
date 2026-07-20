@@ -1,4 +1,3 @@
-import json
 from datetime import datetime
 from sqlmodel import Session, select
 from app.subscriptions.models import Subscription, Payment, UserUsage, Plan

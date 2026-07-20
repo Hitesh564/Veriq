@@ -2,9 +2,8 @@ import os
 import json
 import time
 import asyncio
-from typing import Dict, Any, List, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage
 from app.config import GEMINI_API_KEY
 from app.models.profile import CandidateProfile, JobProfile, GapAnalysis, CompanyProfile
 from app.services.cache import comp_cache, hash_text

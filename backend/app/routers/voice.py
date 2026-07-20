@@ -8,15 +8,15 @@ import time
 import collections
 import webrtcvad
 import random
-from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
-from sqlmodel import Session, select
-from typing import Optional, Dict, Any
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from sqlmodel import Session
+from typing import Optional
 from pydantic import BaseModel
 from app.services.auth_service import auth_service
 
-from app.config import GEMINI_API_KEY, WHISPER_API_KEY
+from app.config import WHISPER_API_KEY
 from app.database import get_session, engine
-from app.models.interview import Interview, Transcript, EvaluationReport
+from app.models.interview import Interview
 from app.routers.interview import (
     create_interview,
     get_evaluation_report,

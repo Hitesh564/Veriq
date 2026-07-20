@@ -123,7 +123,6 @@ def build_interview_blueprint(
     Consumes candidate/job profiles and gap analysis instead of raw text.
     """
     from app.services.cache import comp_cache, hash_text
-    import time
     
     cand_hash = hash_text(candidate_profile.model_dump_json()) if candidate_profile else "none"
     job_hash = hash_text(job_profile.model_dump_json()) if job_profile else "none"

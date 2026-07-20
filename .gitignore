@@ -53,3 +53,9 @@ kickbacks-ai.vsix
 # Exclude Markdown documentation files
 *.md
 **/*.md
+
+# Local database folders (e.g. Qdrant)
+backend/qdrant_db/
+
+# Run logs and structured traces
+backend/logs/

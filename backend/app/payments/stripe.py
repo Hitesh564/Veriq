@@ -2,7 +2,7 @@ import os
 from sqlmodel import Session, select
 import stripe
 from app.payments.service import PaymentService
-from app.subscriptions.models import Plan, Subscription
+from app.subscriptions.models import Subscription
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_mock")
 

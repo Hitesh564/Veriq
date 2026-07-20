@@ -1,13 +1,10 @@
 import os
 import json
-import uuid
-from datetime import datetime
 from typing import List, Dict, Any, Optional
 from sqlmodel import Session, select
 
 from app.models.interview import UserProfile, StudyPlan
 from app.agents.seed_knowledge_base import KNOWLEDGE_DATA
-from app.agents.profiles import ROLE_PROFILES
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 try:

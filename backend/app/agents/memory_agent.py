@@ -1,7 +1,6 @@
 import json
 from sqlmodel import Session, select
 from datetime import datetime
-from typing import List, Dict, Any
 
 from app.models.interview import Interview, EvaluationReport, UserProfile
 from app.agents.profiles import ROLE_PROFILES

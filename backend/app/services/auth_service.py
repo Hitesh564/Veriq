@@ -1,6 +1,6 @@
 import os
 from typing import Optional, Dict, Any
-from fastapi import Header, HTTPException, Depends
+from fastapi import Header, HTTPException
 from app.config import SUPABASE_URL, SUPABASE_ANON_KEY
 
 # Determine if the environment is a local test run or verification run

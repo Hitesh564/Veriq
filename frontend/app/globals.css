@@ -505,7 +505,7 @@ textarea:focus {
 }
 
 .footer-shell .page-shell {
-  padding: 24px;
+  padding: 28px 24px 18px;
   border-radius: 28px;
   background: rgba(255, 253, 249, 0.74);
   border: 1px solid rgba(28, 23, 18, 0.08);
@@ -516,6 +516,114 @@ textarea:focus {
   height: 1px;
   background: rgba(28, 23, 18, 0.08);
   margin-bottom: 26px;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 0.9fr 0.9fr 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.footer-brand-block {
+  max-width: 460px;
+}
+
+.footer-brand-copy {
+  margin-top: 12px;
+}
+
+.footer-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.footer-column {
+  display: grid;
+  gap: 10px;
+}
+
+.footer-column--actions {
+  justify-self: end;
+  max-width: 360px;
+}
+
+.footer-link,
+.footer-note {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.footer-link:hover {
+  color: var(--text-primary);
+  transform: translateX(2px);
+}
+
+.footer-socials {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.footer-social {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text-secondary);
+  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+
+.footer-social:hover {
+  transform: translateY(-1px);
+  border-color: rgba(213, 173, 52, 0.32);
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.footer-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.footer-bottom {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(28, 23, 18, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.footer-bottom__links {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.icon-avatar-button {
+  min-width: 42px;
+  width: 42px;
+  padding: 0;
+}
+
+.icon-avatar-button svg {
+  width: 18px;
+  height: 18px;
 }
 
 .workspace-shell {

@@ -11,7 +11,7 @@ from datetime import datetime
 from langchain_core.messages import HumanMessage, AIMessage
 from app.database import get_session, engine
 from app.models.interview import Interview, Transcript, EvaluationReport, UserProfile, StudyPlan
-from app.models.profile import CandidateProfile, JobProfile, GapAnalysis, CompanyProfile, InterviewBlueprint
+from app.models.profile import CandidateProfile, JobProfile
 from app.agents.interview_agent import interview_agent
 from app.agents.interview_planner import normalize_interview_objectives, build_contextual_fallback_question
 from app.agents.profiles import ROLE_PROFILES
