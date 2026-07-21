@@ -53,6 +53,8 @@ kickbacks-ai.vsix
 # Exclude Markdown documentation files
 *.md
 **/*.md
+!README.md
+!**/README.md
 
 # Local database folders (e.g. Qdrant)
 backend/qdrant_db/
