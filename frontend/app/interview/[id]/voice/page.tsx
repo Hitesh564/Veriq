@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "../../../context/AuthContext";
 import { supabase } from "../../../utils/supabaseClient";
+import HologramAvatar from "../../../components/HologramAvatar";
+
 
 interface ChatMessage {
   sender: "interviewer" | "candidate";
@@ -754,20 +756,11 @@ export default function VoiceInterviewRoom() {
   const depthBars = [42, 54, 66, 72, 82, 88];
 
   const renderVoiceStage = () => {
-    const stateClass = voiceState.toLowerCase();
-
-    return (
-      <div className={`voice-core voice-core--${stateClass}`}>
-        <div className="voice-core__ring voice-core__ring--outer" />
-        <div className="voice-core__ring voice-core__ring--inner" />
-        <div className="voice-core__center">
-          <div className="voice-core__glow" />
-          <div className="voice-core__dot" />
-        </div>
-        <div className="voice-core__pulse" />
-      </div>
-    );
+    return <HologramAvatar voiceState={voiceState} />;
   };
+
+
+
 
   return (
     <div className="voice-room-container">
@@ -1063,25 +1056,28 @@ export default function VoiceInterviewRoom() {
         }
         .voice-room-stage {
           flex: 1;
-          display: grid;
-          place-items: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           padding: 20px;
           background: linear-gradient(180deg, rgba(255, 253, 249, 0.95), rgba(247, 242, 233, 0.96));
           overflow: hidden;
         }
         .voice-room-stage__visual {
-          width: min(100%, 240px);
-          height: min(100%, 240px);
-          display: grid;
-          place-items: center;
+          width: 100%;
+          max-width: 320px;
+          height: 320px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           position: relative;
-          border-radius: 999px;
           background: transparent;
         }
+
         .voice-core {
           position: relative;
-          width: 180px;
-          height: 180px;
+          width: 170px;
+          height: 170px;
           display: grid;
           place-items: center;
           isolation: isolate;
@@ -1097,26 +1093,154 @@ export default function VoiceInterviewRoom() {
           border: 1px solid rgba(155, 118, 18, 0.12);
         }
         .voice-core__ring--outer {
-          inset: 0;
+          inset: -3%;
         }
         .voice-core__ring--inner {
-          inset: 16%;
+          inset: 14%;
           border-color: rgba(155, 118, 18, 0.22);
         }
         .voice-core__center {
-          inset: 32%;
+          inset: 26%;
           border-radius: 50%;
           display: grid;
           place-items: center;
-          background: radial-gradient(circle, rgba(255, 241, 195, 0.9), rgba(213, 173, 52, 0.2) 48%, rgba(255, 255, 255, 0) 74%);
+          align-content: center;
+          background: radial-gradient(circle, rgba(255, 241, 195, 0.92), rgba(213, 173, 52, 0.18) 45%, rgba(255, 255, 255, 0) 75%);
+          overflow: hidden;
+        }
+        .voice-core__scanline {
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.24), transparent 18%, transparent 82%, rgba(255, 255, 255, 0.18)),
+            repeating-linear-gradient(
+              180deg,
+              rgba(155, 118, 18, 0.08) 0px,
+              rgba(155, 118, 18, 0.08) 2px,
+              transparent 2px,
+              transparent 8px
+            );
+          mix-blend-mode: screen;
+          opacity: 0.55;
+          animation: scan-drift 3.8s linear infinite;
         }
         .voice-core__glow {
           position: absolute;
-          inset: -12px;
+          inset: -18px;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(213, 173, 52, 0.34), transparent 68%);
-          filter: blur(6px);
+          background: radial-gradient(circle, rgba(213, 173, 52, 0.42), transparent 68%);
+          filter: blur(8px);
           animation: pulse-core 2.4s ease-in-out infinite;
+        }
+        .voice-core__avatar {
+          position: relative;
+          width: 78px;
+          height: 78px;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
+          background:
+            radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.45), transparent 18%),
+            radial-gradient(circle, rgba(255, 240, 189, 0.98), rgba(227, 185, 64, 0.58) 58%, rgba(122, 86, 10, 0.95) 100%);
+          border: 1px solid rgba(255, 238, 185, 0.55);
+          box-shadow:
+            0 0 26px rgba(213, 173, 52, 0.35),
+            inset 0 0 18px rgba(255, 255, 255, 0.18);
+          z-index: 4;
+          animation: avatar-bob 2.6s ease-in-out infinite;
+        }
+        .voice-core__face {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          overflow: hidden;
+        }
+        .voice-core__eyes {
+          position: absolute;
+          top: 34%;
+          left: 50%;
+          width: 58%;
+          display: flex;
+          justify-content: space-between;
+          transform: translateX(-50%);
+        }
+        .voice-core__eyes span {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: rgba(17, 14, 10, 0.92);
+          box-shadow: 0 0 12px rgba(255, 255, 255, 0.54);
+        }
+        .voice-core__mouth {
+          position: absolute;
+          left: 50%;
+          bottom: 24%;
+          width: 28%;
+          height: 12px;
+          border-radius: 999px;
+          border-bottom: 3px solid rgba(20, 17, 12, 0.82);
+          transform: translateX(-50%);
+          opacity: 1;
+          background: rgba(20, 17, 12, 0.08);
+        }
+        .voice-core__mouth.is-speaking {
+          height: 18px;
+          border-bottom-width: 4px;
+          background: rgba(20, 17, 12, 0.16);
+          animation: mouth-talk 0.7s ease-in-out infinite;
+        }
+        .voice-core__halo {
+          position: absolute;
+          inset: 22%;
+          border-radius: 50%;
+          border: 1px solid rgba(255, 229, 164, 0.44);
+          filter: blur(0.2px);
+          z-index: 1;
+          animation: halo-breathe 3.2s ease-in-out infinite;
+        }
+        .voice-core__caption {
+          position: absolute;
+          left: 50%;
+          bottom: -38px;
+          transform: translateX(-50%);
+          min-width: 138px;
+          padding: 8px 10px;
+          border-radius: 14px;
+          border: 1px solid rgba(155, 118, 18, 0.12);
+          background: rgba(255, 255, 255, 0.72);
+          backdrop-filter: blur(10px);
+          text-align: center;
+          z-index: 4;
+          box-shadow: 0 10px 24px rgba(28, 23, 18, 0.06);
+        }
+        .voice-core__caption-title {
+          display: block;
+          font-family: var(--font-mono);
+          font-size: 0.68rem;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--accent-strong);
+          font-weight: 800;
+        }
+        .voice-core__caption-body {
+          display: block;
+          margin-top: 4px;
+          font-size: 0.76rem;
+          color: var(--text-secondary);
+          line-height: 1.35;
+        }
+        .voice-core__caption.is-thinking {
+          border-color: rgba(59, 130, 246, 0.18);
+        }
+        .voice-core__bloom {
+          position: absolute;
+          inset: 12%;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(213, 173, 52, 0.12), transparent 68%);
+          filter: blur(18px);
+          z-index: -1;
         }
         .voice-core__dot {
           width: 44%;
@@ -1162,6 +1286,12 @@ export default function VoiceInterviewRoom() {
         }
         .voice-core--speaking .voice-core__center {
           transform: scale(1.03);
+          animation: speak-shift 1.8s ease-in-out infinite;
+        }
+        .voice-core--speaking .voice-core__avatar {
+          box-shadow:
+            0 0 32px rgba(213, 173, 52, 0.45),
+            inset 0 0 20px rgba(255, 255, 255, 0.22);
         }
         .voice-core--listening .voice-core__center {
           transform: scale(0.98);
@@ -1173,6 +1303,10 @@ export default function VoiceInterviewRoom() {
         .voice-core--thinking .voice-core__ring--outer,
         .voice-core--transcribing .voice-core__ring--outer {
           animation: spin 14s linear infinite reverse;
+        }
+        .voice-core--thinking .voice-core__caption-body,
+        .voice-core--transcribing .voice-core__caption-body {
+          color: var(--color-primary);
         }
         .voice-core--ended {
           opacity: 0.74;
@@ -1311,6 +1445,22 @@ export default function VoiceInterviewRoom() {
         @keyframes breathe {
           0%, 100% { transform: scale(1); opacity: 0.76; }
           50% { transform: scale(1.04); opacity: 1; }
+        }
+        @keyframes halo-breathe {
+          0%, 100% { transform: scale(0.98); opacity: 0.66; }
+          50% { transform: scale(1.04); opacity: 1; }
+        }
+        @keyframes scan-drift {
+          0% { transform: translateY(-4%); }
+          100% { transform: translateY(4%); }
+        }
+        @keyframes mouth-talk {
+          0%, 100% { transform: translateX(-50%) scaleX(0.95); opacity: 0.76; }
+          50% { transform: translateX(-50%) scaleX(1.08); opacity: 1; }
+        }
+        @keyframes avatar-bob {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-2px) scale(1.02); }
         }
         @keyframes listen-shift {
           0%, 100% { filter: saturate(1); }

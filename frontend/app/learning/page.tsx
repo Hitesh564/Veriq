@@ -88,10 +88,10 @@ export default function LearningDashboardPage() {
           <div className="hero-panel">
             <div className="section-kicker">Learning</div>
             <h1 className="page-title" style={{ marginTop: "18px", maxWidth: "13ch" }}>
-              Study plans that feel like a product.
+              Turn feedback into a focused practice plan.
             </h1>
             <p className="hero-copy" style={{ marginTop: "14px", maxWidth: "60ch" }}>
-              Your weaknesses become a roadmap, and the roadmap becomes a tighter next interview.
+              Use your interview results to strengthen weak topics, revisit useful questions, and prepare for the next round with intent.
             </p>
             <button className="btn btn-primary" style={{ marginTop: "22px" }} onClick={() => router.push("/new-interview")}>
               Practice focus topics
@@ -100,10 +100,10 @@ export default function LearningDashboardPage() {
 
           <div className="hero-visual" style={{ padding: "28px" }}>
             <div className="card" style={{ padding: "20px" }}>
-              <div className="ambient-label">Estimated readiness</div>
+              <div className="ambient-label">Current readiness</div>
               <div style={{ display: "flex", alignItems: "end", gap: "10px", marginTop: "8px" }}>
                 <div style={{ fontFamily: "var(--font-display)", fontSize: "3rem", fontWeight: 700 }}>{readiness}%</div>
-                <div className="section-copy">average score</div>
+                <div className="section-copy">across your signals</div>
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "14px", marginTop: "14px" }}>
@@ -127,7 +127,7 @@ export default function LearningDashboardPage() {
         <section style={{ marginTop: "28px" }} className="feature-grid">
           <div className="feature-card feature-card--wide">
             <div className="ambient-label">Roadmap</div>
-            <h2 className="headline" style={{ marginTop: "10px" }}>Active study path</h2>
+            <h2 className="headline" style={{ marginTop: "10px" }}>Your practice roadmap</h2>
             <div style={{ display: "grid", gap: "12px", marginTop: "16px" }}>
               {roadmap.length === 0 ? (
                 <p className="section-copy">No roadmap items available yet.</p>
@@ -148,8 +148,8 @@ export default function LearningDashboardPage() {
           </div>
 
           <div className="feature-card feature-card--tall">
-            <div className="ambient-label">Questions</div>
-            <h2 className="headline" style={{ marginTop: "10px" }}>Practice prompts</h2>
+            <div className="ambient-label">Questions to revisit</div>
+            <h2 className="headline" style={{ marginTop: "10px" }}>Sharpen your answers</h2>
             <div style={{ display: "grid", gap: "12px", marginTop: "16px" }}>
               {questions.length === 0 ? (
                 <p className="section-copy">No focus questions populated.</p>
@@ -172,7 +172,7 @@ export default function LearningDashboardPage() {
         <section style={{ marginTop: "28px" }} className="feature-grid">
           <div className="feature-card feature-card--wide">
             <div className="ambient-label">Resources</div>
-            <h2 className="headline" style={{ marginTop: "10px" }}>Curated study material</h2>
+            <h2 className="headline" style={{ marginTop: "10px" }}>Prepare for your next round</h2>
             <div style={{ display: "grid", gap: "12px", marginTop: "16px" }}>
               {resources.length === 0 ? (
                 <p className="section-copy">No study resources available yet.</p>
@@ -189,7 +189,7 @@ export default function LearningDashboardPage() {
 
           <div className="feature-card feature-card--tall">
             <div className="ambient-label">Next step</div>
-            <h2 className="headline" style={{ marginTop: "10px" }}>Keep the loop going</h2>
+            <h2 className="headline" style={{ marginTop: "10px" }}>Ready to practice again?</h2>
             <p className="section-copy" style={{ marginTop: "12px" }}>
               Focus on the topics with the highest leverage, then run another interview to measure change.
             </p>

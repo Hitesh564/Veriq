@@ -313,7 +313,7 @@ export default function NewInterviewWizard() {
             </div>
 
             <div style={{ display: "flex", justifyContent: "center", gap: "12px", flexWrap: "wrap", marginTop: "28px" }}>
-              <div className="subtle-chip">$19.99 / month</div>
+              <div className="subtle-chip">₹199 / month</div>
               <button onClick={handleUpgrade} className="btn btn-primary">
                 Upgrade now
               </button>
@@ -471,6 +471,36 @@ export default function NewInterviewWizard() {
               </div>
 
               <div className="card" style={{ padding: "18px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "end" }}>
+                  <label className="ambient-label">Time limit</label>
+                  <span className="headline" style={{ fontSize: "1rem" }}>{duration} mins</span>
+                </div>
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "14px" }}>
+                  {durations.map((item) => {
+                    const isSelected = duration === item.value;
+                    return (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() => setDuration(item.value)}
+                        className="btn btn-secondary"
+                        style={{
+                          background: isSelected ? "rgba(213, 173, 52, 0.12)" : "rgba(255, 255, 255, 0.7)",
+                          borderColor: isSelected ? "rgba(213, 173, 52, 0.45)" : "var(--border-subtle)",
+                          color: isSelected ? "var(--accent-strong)" : "var(--text-primary)"
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="fine-print" style={{ marginTop: "10px" }}>
+                  This controls the backend time limit and the question budget for the session.
+                </div>
+              </div>
+
+              <div className="card" style={{ padding: "18px" }}>
                 <label className="ambient-label">Company Style</label>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "12px" }}>
                   {companies.map((c) => (
@@ -554,16 +584,20 @@ export default function NewInterviewWizard() {
                       </div>
                       <div className="subtle-chip">01</div>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                      <div className="card" style={{ padding: "12px" }}>
-                        <div className="ambient-label">Signal</div>
-                        <div style={{ fontWeight: 700, marginTop: "8px" }}>{mode === "resume_jd" ? "Combined" : mode === "jd" ? "JD match" : mode === "resume" ? "Resume" : "Role"}</div>
-                      </div>
-                      <div className="card" style={{ padding: "12px" }}>
-                        <div className="ambient-label">Difficulty</div>
-                        <div style={{ fontWeight: 700, marginTop: "8px" }}>{difficulty.toUpperCase()}</div>
-                      </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <div className="card" style={{ padding: "12px" }}>
+                      <div className="ambient-label">Signal</div>
+                      <div style={{ fontWeight: 700, marginTop: "8px" }}>{mode === "resume_jd" ? "Combined" : mode === "jd" ? "JD match" : mode === "resume" ? "Resume" : "Role"}</div>
                     </div>
+                    <div className="card" style={{ padding: "12px" }}>
+                      <div className="ambient-label">Difficulty</div>
+                      <div style={{ fontWeight: 700, marginTop: "8px" }}>{difficulty.toUpperCase()}</div>
+                    </div>
+                    <div className="card" style={{ padding: "12px" }}>
+                      <div className="ambient-label">Time limit</div>
+                      <div style={{ fontWeight: 700, marginTop: "8px" }}>{duration} minutes</div>
+                    </div>
+                  </div>
                     <div style={{ display: "grid", gap: "10px" }}>
                       {previewBullets.map((item) => (
                         <div key={item.title} className="card" style={{ padding: "12px", borderLeft: "3px solid var(--accent)" }}>
@@ -583,7 +617,7 @@ export default function NewInterviewWizard() {
                 AI Model Tuning
               </div>
               <p className="section-copy" style={{ marginTop: "10px" }}>
-                Based on <strong>{mode === "resume_jd" ? "Combined" : mode === "jd" ? "JD Match" : mode === "resume" ? "Resume" : "Role-Based"}</strong> and <strong>{difficulty.toUpperCase()}</strong>, Veriq will prioritize the right follow-ups and estimate a session length of roughly <strong>{duration * 2 + 35} minutes</strong>.
+                Based on <strong>{mode === "resume_jd" ? "Combined" : mode === "jd" ? "JD Match" : mode === "resume" ? "Resume" : "Role-Based"}</strong>, <strong>{difficulty.toUpperCase()}</strong>, and a <strong>{duration}-minute</strong> time limit, Veriq will prioritize the right follow-ups and keep the session aligned with the selected budget.
               </p>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import json
 import io
 import os
+import re
 import pypdf
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File
@@ -17,6 +18,8 @@ from app.agents.interview_planner import normalize_interview_objectives, build_c
 from app.agents.profiles import ROLE_PROFILES
 
 from app.services.auth_service import auth_service
+from app.services.agent_eval import create_agent_eval_callback, merge_agent_eval_callback
+
 
 router = APIRouter(prefix="/api/v1/interviews", tags=["interviews"])
 
@@ -189,7 +192,7 @@ def get_max_questions(duration: int) -> int:
         return 10
     else:
         return 15
-
+# 
 def merge_gap_objectives(plan_objectives: Dict[str, Any], gap_analysis: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Makes resume/JD objectives first-class interview objectives instead of passive
@@ -423,9 +426,288 @@ def extract_text_from_txt(file_bytes: bytes) -> str:
     except Exception:
         return file_bytes.decode("latin-1").strip()
 
+def _clean_text_line(line: str) -> str:
+    """Removes bullet symbols and extra spaces from a line."""
+    line = re.sub(r'^[•\-\*\d+\.\:\>\–\—\s]+', '', line).strip()
+    return line
+
+def parse_resume_rule_based(resume_text: str) -> Dict[str, Any]:
+    """
+    Deterministically parses resume text using section detection, regex, and line patterns.
+    Extracts skills, projects, and strengths without hallucinating data.
+    """
+    if not resume_text or not resume_text.strip():
+        return {"skills": [], "projects": [], "strengths": []}
+
+    lines = [line.strip() for line in resume_text.splitlines() if line.strip()]
+    
+    section_patterns = {
+        "skills": re.compile(r'^(?:technical\s+|core\s+)?(?:skills|technologies|tools|competencies|tech\s+stack|expertise)(?:\s*[\&:]|\b)', re.IGNORECASE),
+        "projects": re.compile(r'^(?:key\s+|personal\s+|academic\s+|recent\s+)?projects(?:\s*[\&:]|\b)', re.IGNORECASE),
+        "experience": re.compile(r'^(?:work\s+|professional\s+|relevant\s+)?experience|employment\s+history(?:\s*[\&:]|\b)', re.IGNORECASE),
+        "strengths": re.compile(r'^(?:professional\s+)?summary|profile|key\s+strengths|highlights|about\s+me(?:\s*[\&:]|\b)', re.IGNORECASE),
+        "education": re.compile(r'^(?:education|academic\s+background|qualifications)(?:\s*[\&:]|\b)', re.IGNORECASE),
+        "certifications": re.compile(r'^(?:certifications|certificates|licenses)(?:\s*[\&:]|\b)', re.IGNORECASE),
+    }
+
+    sections: Dict[str, List[str]] = {
+        "skills": [],
+        "projects": [],
+        "experience": [],
+        "strengths": [],
+        "education": [],
+        "certifications": [],
+        "general": []
+    }
+    
+    current_section = "general"
+    for line in lines:
+        matched_section = None
+        for sec_name, pattern in section_patterns.items():
+            if pattern.search(line) and (len(line) < 45 or line.endswith(":")):
+                matched_section = sec_name
+                break
+        
+        if matched_section:
+            current_section = matched_section
+        else:
+            sections[current_section].append(line)
+
+    # 1. Extract Skills
+    extracted_skills: List[str] = []
+    seen_skills_lower = set()
+
+    def add_skill(s: str):
+        cleaned = re.sub(r'^[•\-\*\s]+|[•\-\*\s]+$', '', s).strip()
+        cleaned = re.sub(r'(?i)^(?:languages|frameworks|tools|databases|platforms|libraries|skills|technologies)\s*:\s*', '', cleaned).strip()
+        if cleaned and 2 <= len(cleaned) <= 40:
+            cleaned_lower = cleaned.lower()
+            ignore_list = ["curriculum", "resume", "page 1", "page 2", "references", "available upon request", "present", "presently", "years", "month", "months"]
+            if cleaned_lower not in seen_skills_lower and not any(w in cleaned_lower for w in ignore_list):
+                seen_skills_lower.add(cleaned_lower)
+                extracted_skills.append(cleaned)
+
+    for line in sections["skills"]:
+        parts = line.split(":")
+        skill_text = parts[-1] if len(parts) > 1 else parts[0]
+        for item in re.split(r'[,|/•;\*]', skill_text):
+            add_skill(item)
+
+    if len(extracted_skills) < 3:
+        for line in lines:
+            if re.search(r'\b(?:skills|technologies|tools|languages|frameworks|tech stack)\s*:', line, re.IGNORECASE):
+                parts = line.split(":", 1)
+                for item in re.split(r'[,|/•;\*]', parts[1]):
+                    add_skill(item)
+
+    # 2. Extract Projects
+    extracted_projects: List[Dict[str, str]] = []
+    project_lines = sections["projects"]
+    if project_lines:
+        current_project_title = None
+        current_project_desc_parts = []
+        
+        for line in project_lines:
+            cleaned = _clean_text_line(line)
+            is_bullet = line.startswith(('-', '*', '•')) or bool(re.match(r'^\d+[\.\)]', line))
+            
+            if not is_bullet and len(cleaned) < 70 and not cleaned.endswith("."):
+                if current_project_title:
+                    desc = " ".join(current_project_desc_parts).strip()
+                    extracted_projects.append({"title": current_project_title, "description": desc[:250]})
+                
+                title_parts = re.split(r'[|\–\—]', cleaned)
+                current_project_title = title_parts[0].strip()
+                current_project_desc_parts = [title_parts[1].strip()] if len(title_parts) > 1 else []
+            else:
+                if current_project_title:
+                    current_project_desc_parts.append(cleaned)
+                elif not extracted_projects and len(cleaned) > 10:
+                    current_project_title = cleaned[:50]
+                    
+        if current_project_title:
+            desc = " ".join(current_project_desc_parts).strip()
+            extracted_projects.append({"title": current_project_title, "description": desc[:250]})
+
+    extracted_projects = extracted_projects[:5]
+
+    # 3. Extract Strengths
+    extracted_strengths: List[str] = []
+    strength_source = sections["strengths"] if sections["strengths"] else sections["general"][:6]
+    
+    for line in strength_source:
+        cleaned = _clean_text_line(line)
+        if 15 <= len(cleaned) <= 150:
+            if not any(w in cleaned.lower() for w in ["phone", "email", "linkedin", "github", "address", "http", "@"]):
+                extracted_strengths.append(cleaned)
+                if len(extracted_strengths) >= 4:
+                    break
+
+    return {
+        "skills": extracted_skills,
+        "projects": extracted_projects,
+        "strengths": extracted_strengths
+    }
+
+def parse_jd_rule_based(jd_text: str) -> Dict[str, Any]:
+    """
+    Deterministically parses job description text using section detection and regex.
+    Extracts required skills and responsibilities without hallucinating data.
+    """
+    if not jd_text or not jd_text.strip():
+        return {"required_skills": [], "responsibilities": []}
+
+    lines = [line.strip() for line in jd_text.splitlines() if line.strip()]
+    
+    section_patterns = {
+        "requirements": re.compile(r'^(?:required\s+|key\s+|basic\s+|minimum\s+)?(?:skills|requirements|qualifications|what\s+we(?:\'re|\s+are)\s+looking\s+for|must\s+haves?)(?:\s*[\&:]|\b)', re.IGNORECASE),
+        "responsibilities": re.compile(r'^(?:key\s+|primary\s+)?(?:responsibilities|duties|what\s+you(?:\'ll|\s+will)\s+do|role\s+overview|job\s+description)(?:\s*[\&:]|\b)', re.IGNORECASE),
+    }
+
+    sections: Dict[str, List[str]] = {
+        "requirements": [],
+        "responsibilities": [],
+        "general": []
+    }
+    
+    current_section = "general"
+    for line in lines:
+        matched_section = None
+        for sec_name, pattern in section_patterns.items():
+            if pattern.search(line) and (len(line) < 45 or line.endswith(":")):
+                matched_section = sec_name
+                break
+        
+        if matched_section:
+            current_section = matched_section
+        else:
+            sections[current_section].append(line)
+
+    # 1. Extract Required Skills
+    required_skills: List[str] = []
+    seen_req_lower = set()
+
+    def add_req_skill(s: str):
+        cleaned = re.sub(r'^[•\-\*\s]+|[•\-\*\s]+$', '', s).strip()
+        cleaned = re.sub(r'^(?:must\s+have(?:\s+a)?|experience\s+(?:with|in)|proficiency\s+in|knowledge\s+of|strong\s+(?:understanding|background)(?:\s+of|\s+in)|ability\s+to|familiarity\s+with)\s+', '', cleaned, flags=re.IGNORECASE).strip()
+        if cleaned and 2 <= len(cleaned) <= 40:
+            cleaned_lower = cleaned.lower()
+            ignore_terms = ["equal opportunity", "full time", "part time", "years of experience", "competitive salary", "benefits package"]
+            if cleaned_lower not in seen_req_lower and not any(w in cleaned_lower for w in ignore_terms):
+                seen_req_lower.add(cleaned_lower)
+                required_skills.append(cleaned)
+
+    for line in sections["requirements"]:
+        parts = line.split(":")
+        skill_text = parts[-1] if len(parts) > 1 else parts[0]
+        for item in re.split(r'[,|/•;\*]', skill_text):
+            add_req_skill(item)
+
+    if not required_skills:
+        for line in lines:
+            if re.search(r'\b(?:required|skills|must have|proficient in|experience with)\b', line, re.IGNORECASE):
+                cleaned = _clean_text_line(line)
+                for item in re.split(r'[,|/•;\*]', cleaned):
+                    add_req_skill(item)
+
+    # 2. Extract Responsibilities
+    responsibilities: List[str] = []
+    resp_lines = sections["responsibilities"] if sections["responsibilities"] else sections["general"]
+    
+    for line in resp_lines:
+        cleaned = _clean_text_line(line)
+        if 15 <= len(cleaned) <= 160:
+            if not any(w in cleaned.lower() for w in ["salary", "location", "benefits", "apply", "contact", "http", "@"]):
+                responsibilities.append(cleaned)
+                if len(responsibilities) >= 5:
+                    break
+
+    return {
+        "required_skills": required_skills[:10],
+        "responsibilities": responsibilities[:5]
+    }
+
+def parse_gap_analysis_rule_based(extracted_resume: Dict[str, Any], extracted_jd: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Compares extracted resume skills against JD required skills to identify missing skills and focus areas.
+    """
+    resume_skills = extracted_resume.get("skills", [])
+    required_skills = extracted_jd.get("required_skills", [])
+    
+    resume_skills_lower = [s.lower() for s in resume_skills]
+    
+    missing_skills = []
+    focus_areas = []
+    
+    for req_skill in required_skills:
+        req_lower = req_skill.lower()
+        matched = any(req_lower in r_skill or r_skill in req_lower for r_skill in resume_skills_lower)
+        if not matched:
+            missing_skills.append(req_skill)
+            focus_areas.append(f"{req_skill} Concepts & Application")
+            
+    return {
+        "missing_skills": missing_skills,
+        "focus_areas": focus_areas
+    }
+
+def generate_rule_based_objectives(extracted_resume: Dict[str, Any], extracted_jd: Dict[str, Any], gap_analysis: Dict[str, Any]) -> List[str]:
+    """
+    Dynamically generates interview objectives based strictly on extracted candidate & JD facts.
+    Returns empty list if no facts were extracted.
+    """
+    objectives = []
+    
+    projects = extracted_resume.get("projects", [])
+    resume_skills = extracted_resume.get("skills", [])
+    strengths = extracted_resume.get("strengths", [])
+    
+    required_skills = extracted_jd.get("required_skills", [])
+    responsibilities = extracted_jd.get("responsibilities", [])
+    missing_skills = gap_analysis.get("missing_skills", [])
+    
+    # 1. Project Validation (from Resume)
+    for proj in projects[:2]:
+        title = proj.get("title")
+        if title:
+            objectives.append(f"Verify hands-on technical contribution in the '{title}' project")
+            
+    # 2. Missing Skills Probing (from Gap Analysis)
+    for missing_skill in missing_skills[:2]:
+        objectives.append(f"Probe theoretical knowledge and competence in missing required skill: '{missing_skill}'")
+        
+    # 3. Matching / Required Skills Assessment (from JD & Resume)
+    matching_skills = [s for s in required_skills if s not in missing_skills]
+    for skill in matching_skills[:2]:
+        objectives.append(f"Assess depth of practical experience in required skill: '{skill}'")
+        
+    # 4. Responsibilities Verification (from JD if objectives < 3)
+    if len(objectives) < 3 and responsibilities:
+        for resp in responsibilities[:2]:
+            objectives.append(f"Evaluate capability to execute key role responsibility: '{resp[:60]}'")
+            
+    # 5. Claimed Skills / Strengths (from Resume if objectives < 3)
+    if len(objectives) < 3 and resume_skills:
+        for skill in resume_skills[:2]:
+            if not any(skill in obj for obj in objectives):
+                objectives.append(f"Explore technical experience and proficiency in '{skill}'")
+                
+    if len(objectives) < 3 and strengths:
+        for str_item in strengths[:2]:
+            if not any(str_item[:30] in obj for obj in objectives):
+                objectives.append(f"Validate candidate background: '{str_item[:70]}'")
+                
+    unique_objectives = []
+    for obj in objectives:
+        if obj not in unique_objectives:
+            unique_objectives.append(obj)
+            
+    return unique_objectives[:5]
+
 def generate_gap_analysis(resume_text: Optional[str], jd_text: Optional[str], db: Session, user_id: str = "default") -> Dict[str, Any]:
     """
     Calls Gemini to extract background details, required skills, and comparison objectives.
+    When Gemini is unavailable, uses a deterministic rule-based parser that never fabricates data.
     Integrates results with the Memory System to calculate a Job-Specific Readiness Score.
     """
     if not resume_text and not jd_text:
@@ -510,58 +792,29 @@ def generate_gap_analysis(resume_text: Optional[str], jd_text: Optional[str], db
             interview_objectives = data.get("interview_objectives", interview_objectives)
             
         except Exception as e:
-            print(f"[WARNING] Gap analysis Gemini run failed: {e}. Using mock fallback.")
+            print(f"[WARNING] Gap analysis Gemini run failed: {e}. Falling back to rule-based parser.")
             use_gemini = False
             
     if not use_gemini:
-        # Fallback Mock data
-        if resume_text and not jd_text:
-            extracted_resume = {
-                "skills": ["Python", "PyTorch"],
-                "projects": [{"title": "Retinal Age Prediction", "description": "Mock description of age prediction"}],
-                "strengths": ["Stated experience in PyTorch and computer vision."]
-            }
-            interview_objectives = [
-                "Verify PyTorch knowledge through the Retinal Age Prediction project",
-                "Deep-dive into Python programming concepts",
-                "Explore computer vision experience"
-            ]
-        elif jd_text and not resume_text:
-            extracted_jd = {
-                "required_skills": ["Transformers", "PyTorch", "Qdrant"],
-                "responsibilities": ["Design and deploy agentic AI workflows."]
-            }
-            interview_objectives = [
-                "Assess understanding of Transformers and self-attention mechanism",
-                "Verify PyTorch coding competence",
-                "Evaluate familiarity with vector databases and Qdrant"
-            ]
-        else:
-            extracted_resume = {
-                "skills": ["Python", "PyTorch"],
-                "projects": [{"title": "Retinal Age Prediction", "description": "Mock description of age prediction"}],
-                "strengths": ["Stated experience in PyTorch and computer vision."]
-            }
-            req_skills = ["Transformers", "PyTorch", "Qdrant"]
-            if jd_text and "python" in jd_text.lower():
-                req_skills.append("Python")
-            extracted_jd = {
-                "required_skills": req_skills,
-                "responsibilities": ["Design and deploy agentic AI workflows."]
-            }
-            gap_analysis = {
-                "missing_skills": ["Transformers", "Qdrant"],
-                "focus_areas": ["Transformers Attention Math", "Qdrant Vector Databases"]
-            }
-            interview_objectives = [
-                "Verify PyTorch knowledge through the Retinal Age Prediction project",
-                "Test understanding of Transformers and Self-Attention mechanisms",
-                "Evaluate vector search concepts and Qdrant integration"
-            ]
+        # Fallback Rule-based deterministic extraction (No mock data / zero hallucinations)
+        if resume_text:
+            extracted_resume = parse_resume_rule_based(resume_text)
+        if jd_text:
+            extracted_jd = parse_jd_rule_based(jd_text)
+            
+        if resume_text and jd_text:
+            gap_analysis = parse_gap_analysis_rule_based(extracted_resume, extracted_jd)
+            
+        interview_objectives = generate_rule_based_objectives(extracted_resume, extracted_jd, gap_analysis)
             
     # Calculate Job-Specific Readiness Score by integrating Memory System
     from app.agents.memory_agent import is_topic_match
-    profile = db.exec(select(UserProfile).where(UserProfile.user_id == user_id)).first()
+    profile = None
+    try:
+        profile = db.exec(select(UserProfile).where(UserProfile.user_id == user_id)).first()
+    except Exception as e:
+        print(f"[WARNING] Could not query UserProfile in generate_gap_analysis: {e}")
+        
     mastery = {}
     if profile:
         try:
@@ -1773,7 +2026,7 @@ def process_interview_turn(id: str, candidate_text: str, session: Session, audio
     interview = session.get(Interview, id)
     if not interview:
         raise ValueError("Interview session not found.")
-        
+
     if interview.status == "completed":
         try:
             debug_dashboard = json.loads(interview.debug_dashboard_json or "{}")
@@ -1788,6 +2041,8 @@ def process_interview_turn(id: str, candidate_text: str, session: Session, audio
             "interview_phase": interview.interview_phase,
             "debug_dashboard": debug_dashboard
         }
+
+    agent_eval_callback = create_agent_eval_callback(interview.id)
         
     current_difficulty = interview.difficulty
     
@@ -1946,7 +2201,10 @@ def process_interview_turn(id: str, candidate_text: str, session: Session, audio
     import copy
     before_objectives = copy.deepcopy(interview_objectives)
     try:
-        result = interview_agent.invoke(current_state)
+        result = interview_agent.invoke(
+            current_state,
+            config=merge_agent_eval_callback({}, agent_eval_callback),
+        )
         next_question = result.get("current_question", "")
         agent_status = result.get("status", "in_progress")
         agent_q_count = result.get("question_count", interview.question_count)

@@ -38,6 +38,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
+.ruff_cache/
+*.tsbuildinfo
 
 # OS files
 .DS_Store

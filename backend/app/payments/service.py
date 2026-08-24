@@ -31,6 +31,7 @@ def get_payment_service() -> PaymentService:
         from app.payments.stripe import StripePaymentService
         return StripePaymentService()
     elif provider == "razorpay":
-        raise NotImplementedError("RazorpayPaymentService is not yet implemented.")
+        from app.payments.razorpay import RazorpayPaymentService
+        return RazorpayPaymentService()
     else:
         raise ValueError(f"Unknown payment provider: {provider}")

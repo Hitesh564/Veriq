@@ -1,8 +1,10 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 
 import { useAuth } from "./context/AuthContext";
+
 
 type ModeKey = "adaptive" | "voice" | "growth";
 
@@ -24,7 +26,7 @@ const capabilityModes: Array<{
     key: "voice",
     kicker: "Voice-native interview",
     title: "A live conversation feels closer to a real interview room.",
-    body: "The experience is built for spoken answers, follow-ups, pacing, and pressure. The interaction feels active instead of like a form with AI sprinkled on top.",
+    body: "Practice spoken answers, follow-ups, pacing, and pressure in a voice-first interview room designed for natural conversation.",
     signal: ["Listening", "Speaking", "Follow-up depth"]
   },
   {
@@ -46,7 +48,7 @@ const scrollSteps = [
   {
     num: "01",
     title: "Configure the session",
-    body: "Choose a role, difficulty, company style, and optional resume or JD input. The setup is designed to feel editorial, not like a long form."
+    body: "Choose a role, difficulty, company style, and optional resume or job description to create a focused practice session."
   },
   {
     num: "02",
@@ -62,16 +64,19 @@ const scrollSteps = [
 
 const starPoints = [
   {
+    eyebrow: "01 / Context aware",
     title: "Adaptive intelligence",
-    body: "The model reacts to the userâ€™s profile and target role instead of using one fixed script."
+    body: "The interview flow reacts to the candidate’s role, resume, and target company instead of relying on one fixed question script."
   },
   {
-    title: "Voice-first interaction",
-    body: "A live speaking experience creates more energy than a static landing page or plain setup wizard."
+    eyebrow: "02 / Voice first",
+    title: "Live speaking room",
+    body: "Candidates answer naturally in a voice-driven room that feels closer to a real interview than a static form."
   },
   {
-    title: "Feedback that moves users forward",
-    body: "The product closes the loop by turning performance into a next-step roadmap."
+    eyebrow: "03 / Growth loop",
+    title: "Actionable feedback",
+    body: "Each session ends with transcript insights, strength areas, and a next-step roadmap for the following practice round."
   }
 ];
 
@@ -98,15 +103,15 @@ export default function HomePage() {
                 <span className="material-symbols-outlined" style={{ fontSize: 18, color: "var(--accent)" }}>
                   auto_awesome
                 </span>
-                AI co-pilot active
+                AI interview practice, made personal
               </div>
 
               <h1 className="landing-title">
-                Interview practice that feels alive.
+                Practice the interview before it matters.
               </h1>
 
               <p className="landing-subtitle">
-                Veriq turns interview preparation into a premium, scrollable experience with adaptive sessions, live voice flow, and a feedback loop that keeps improving your next run.
+                Veriq gives you a live, role-aware interview room with voice practice, useful feedback, and a clear next step after every session.
               </p>
 
               <div className="landing-actions">
@@ -128,11 +133,56 @@ export default function HomePage() {
               </div>
             </div>
 
+            {/* Right Column Hero Interactive Showcase */}
+            <div className="landing-hero__visual">
+              <div className="workspace-card">
+                <div className="workspace-card__header">
+                  <div>
+                    <span className="workspace-card__eyebrow">Veriq workspace</span>
+                    <h2>Build interview readiness.</h2>
+                  </div>
+                  <span className="workspace-card__status"><i /> Ready</span>
+                </div>
+
+                <div className="workspace-card__start">
+                  <span className="workspace-card__label">Start with a focused practice room</span>
+                  <p>Choose a role, difficulty, and interview style. Add your resume or job description when you want more targeted questions.</p>
+                  <Link href="/new-interview" className="workspace-card__primary-action">
+                    Configure an interview <span aria-hidden="true">→</span>
+                  </Link>
+                </div>
+
+                <div className="workspace-card__tools">
+                  <Link href="/history" className="workspace-card__tool">
+                    <span className="workspace-card__tool-icon">↗</span>
+                    <div className="workspace-card__tool-copy"><div className="workspace-card__tool-title">Review history</div><div className="workspace-card__tool-subtitle">See transcripts and evaluations</div></div>
+                  </Link>
+                  <Link href="/learning" className="workspace-card__tool">
+                    <span className="workspace-card__tool-icon">✦</span>
+                    <div className="workspace-card__tool-copy"><div className="workspace-card__tool-title">Continue learning</div><div className="workspace-card__tool-subtitle">Turn weak spots into a plan</div></div>
+                  </Link>
+                  <Link href="/how-it-works" className="workspace-card__tool">
+                    <span className="workspace-card__tool-icon">i</span>
+                    <div className="workspace-card__tool-copy"><div className="workspace-card__tool-title">See how it works</div><div className="workspace-card__tool-subtitle">Understand the Veriq loop</div></div>
+                  </Link>
+                  <Link href="/product" className="workspace-card__tool">
+                    <span className="workspace-card__tool-icon">⌁</span>
+                    <div className="workspace-card__tool-copy"><div className="workspace-card__tool-title">Explore the product</div><div className="workspace-card__tool-subtitle">Adaptive, voice-first practice</div></div>
+                  </Link>
+                </div>
+
+                <div className="workspace-card__footer">
+                  <span>Role-aware · Voice-first · Feedback-led</span>
+                  <Link href="/new-interview">Open setup <span aria-hidden="true">→</span></Link>
+                </div>
+              </div>
+            </div>
           </div>
+
 
           <div className="landing-scroll-hint">
             <span className="landing-scroll-hint__line" />
-            Scroll to explore the product story
+            Explore how Veriq helps you prepare
           </div>
         </div>
       </section>
@@ -140,9 +190,9 @@ export default function HomePage() {
       <section className="landing-section">
         <div className="page-shell">
           <div className="landing-section__intro">
-            <div className="section-kicker">Why it stands out</div>
+            <div className="section-kicker">Why Veriq works</div>
             <h2 className="landing-section__title">
-              Three strengths that make the product feel premium, useful, and hard to ignore.
+              Everything you need to turn interview practice into measurable progress.
             </h2>
           </div>
 
@@ -187,9 +237,9 @@ export default function HomePage() {
       <section className="landing-section landing-section--tight">
         <div className="page-shell">
           <div className="landing-section__intro landing-section__intro--center">
-            <div className="section-kicker">How the experience flows</div>
+            <div className="section-kicker">Your practice loop</div>
             <h2 className="landing-section__title">
-              The page scrolls like a story, not a brochure.
+              Prepare with intention, practice out loud, and know what to improve next.
             </h2>
           </div>
 
@@ -213,20 +263,21 @@ export default function HomePage() {
       <section className="landing-section">
         <div className="page-shell">
           <div className="landing-section__intro landing-section__intro--center">
-            <div className="section-kicker">Core strengths</div>
+            <div className="section-kicker">What you gain</div>
             <h2 className="landing-section__title">
-              The three points we should highlight on the home page.
+              A clearer, more confident way to show up for the real interview.
             </h2>
           </div>
 
           <div className="star-list">
             {starPoints.map((item, index) => (
-              <div key={item.title} className="star-row">
-                <div className="star-row__number">0{index + 1}</div>
-                <div className="star-row__text">
-                  <h3 className="star-row__title">{item.title}</h3>
-                  <p className="star-row__body">{item.body}</p>
+              <div key={item.title} className="star-card">
+                <div className="star-card__top">
+                  <div className="star-card__index">0{index + 1}</div>
+                  <div className="star-card__eyebrow">{item.eyebrow}</div>
                 </div>
+                <h3 className="star-card__title">{item.title}</h3>
+                <p className="star-card__body">{item.body}</p>
               </div>
             ))}
           </div>
@@ -240,7 +291,7 @@ export default function HomePage() {
               <div className="section-kicker">Ready to practice</div>
               <h2 className="cta-band__title">Launch a better interview loop in a few seconds.</h2>
               <p className="cta-band__body">
-                A premium landing page should feel calm, active, and memorable. This layout keeps the tone elegant while still showing the product in motion.
+                Start with one focused session and leave with feedback you can use in your next round. Veriq keeps your preparation practical, personal, and moving forward.
               </p>
             </div>
             <div className="cta-band__actions">
@@ -309,11 +360,475 @@ export default function HomePage() {
           position: relative;
           z-index: 1;
           display: grid;
-          grid-template-columns: 1fr;
-          gap: 28px;
+          grid-template-columns: minmax(0, 1fr) minmax(340px, 460px);
+          gap: 48px;
           align-items: center;
           min-height: calc(100svh - 120px);
-          max-width: 860px;
+          width: 100%;
+        }
+
+        .landing-hero__visual {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 100%;
+        }
+
+        .workspace-card {
+          width: 100%;
+          padding: 26px;
+          border: 1px solid rgba(28, 23, 18, 0.1);
+          border-radius: 30px;
+          background: rgba(255, 253, 249, 0.88);
+          box-shadow: 0 28px 70px rgba(28, 23, 18, 0.13);
+          backdrop-filter: blur(18px);
+        }
+
+        .workspace-card__header,
+        .workspace-card__footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+        }
+
+        .workspace-card__eyebrow,
+        .workspace-card__label {
+          color: var(--accent-strong);
+          font-family: var(--font-mono);
+          font-size: 0.7rem;
+          font-weight: 800;
+          letter-spacing: 0.13em;
+          text-transform: uppercase;
+        }
+
+        .workspace-card h2 {
+          margin-top: 8px;
+          font-family: var(--font-display);
+          font-size: clamp(1.7rem, 3vw, 2.35rem);
+          letter-spacing: -0.05em;
+          line-height: 1;
+        }
+
+        .workspace-card__status {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          padding: 7px 10px;
+          border: 1px solid rgba(29, 127, 84, 0.2);
+          border-radius: 999px;
+          color: var(--success);
+          background: rgba(29, 127, 84, 0.08);
+          font-size: 0.74rem;
+          font-weight: 700;
+        }
+
+        .workspace-card__status i {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: var(--success);
+        }
+
+        .workspace-card__start {
+          margin-top: 22px;
+          padding: 20px;
+          border-radius: 20px;
+          background: linear-gradient(135deg, rgba(213, 173, 52, 0.14), rgba(255, 255, 255, 0.74));
+          border: 1px solid rgba(213, 173, 52, 0.2);
+        }
+
+        .workspace-card__start p {
+          margin-top: 8px;
+          color: var(--text-secondary);
+          font-size: 0.86rem;
+          line-height: 1.6;
+        }
+
+        .workspace-card__primary-action {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          margin-top: 16px;
+          color: var(--text-primary);
+          font-size: 0.86rem;
+          font-weight: 800;
+        }
+
+        .workspace-card__primary-action:hover,
+        .workspace-card__footer a:hover {
+          color: var(--accent-strong);
+        }
+
+        .workspace-card__tools {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+          margin-top: 14px;
+        }
+
+        .workspace-card__tool {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          min-height: 76px;
+          padding: 14px;
+          border: 1px solid rgba(28, 23, 18, 0.08);
+          border-radius: 17px;
+          background: rgba(255, 255, 255, 0.64);
+          transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
+        }
+
+        .workspace-card__tool:hover {
+          transform: translateY(-2px);
+          border-color: rgba(213, 173, 52, 0.38);
+          background: rgba(255, 255, 255, 0.92);
+        }
+
+        .workspace-card__tool-icon {
+          display: grid;
+          flex: 0 0 24px;
+          width: 24px;
+          height: 24px;
+          place-items: center;
+          border-radius: 8px;
+          color: var(--accent-strong);
+          background: var(--accent-soft);
+          font-size: 0.8rem;
+          font-weight: 800;
+        }
+
+        .workspace-card__tool-copy {
+          display: block;
+          min-width: 0;
+        }
+
+        .workspace-card__tool-title {
+          color: var(--text-primary);
+          font-size: 0.82rem;
+          font-weight: 800;
+          line-height: 1.25;
+        }
+
+        .workspace-card__tool-subtitle {
+          margin-top: 4px;
+          color: var(--text-muted);
+          font-size: 0.7rem;
+          line-height: 1.35;
+        }
+
+        .workspace-card__footer {
+          margin-top: 16px;
+          padding-top: 16px;
+          border-top: 1px solid rgba(28, 23, 18, 0.08);
+          color: var(--text-muted);
+          font-family: var(--font-mono);
+          font-size: 0.66rem;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+        }
+
+        .workspace-card__footer a {
+          color: var(--text-primary);
+          font-family: var(--font-sans);
+          font-size: 0.78rem;
+          font-weight: 800;
+          letter-spacing: 0;
+          text-transform: none;
+          white-space: nowrap;
+        }
+
+        .signal-card {
+          width: 100%;
+          padding: 22px;
+          border: 1px solid rgba(119, 143, 174, 0.28);
+          border-radius: 30px;
+          background: linear-gradient(160deg, rgba(234, 242, 250, 0.96), rgba(190, 202, 220, 0.94));
+          box-shadow: 0 28px 70px rgba(43, 63, 94, 0.18);
+          color: #16223a;
+          animation: floatOrb 10s ease-in-out infinite;
+        }
+
+        .signal-card__header {
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr) auto;
+          align-items: start;
+          gap: 12px;
+          padding: 0 4px 22px;
+        }
+
+        .signal-card__window-dots {
+          display: flex;
+          gap: 8px;
+          padding-top: 5px;
+        }
+
+        .signal-card__window-dots span {
+          width: 11px;
+          height: 11px;
+          border-radius: 50%;
+          background: #f25757;
+        }
+
+        .signal-card__window-dots span:nth-child(2) { background: #f5b52f; }
+        .signal-card__window-dots span:nth-child(3) { background: #36b95b; }
+
+        .signal-card__header strong,
+        .signal-card__header span,
+        .signal-card__session {
+          display: block;
+        }
+
+        .signal-card__header strong {
+          font-size: 1rem;
+          letter-spacing: -0.02em;
+        }
+
+        .signal-card__header > div:nth-child(2) span,
+        .signal-card__session span {
+          margin-top: 3px;
+          color: #617795;
+          font-size: 0.72rem;
+        }
+
+        .signal-card__session {
+          text-align: right;
+        }
+
+        .signal-card__session strong {
+          font-size: 1.05rem;
+        }
+
+        .signal-card__recommendation,
+        .signal-card__metric,
+        .signal-card__footer {
+          border: 1px solid rgba(255, 255, 255, 0.75);
+          background: rgba(248, 251, 254, 0.84);
+        }
+
+        .signal-card__recommendation {
+          position: relative;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 8px 16px;
+          padding: 22px;
+          border-radius: 20px;
+        }
+
+        .signal-card__label {
+          display: block;
+          color: #6b819f;
+          font-size: 0.68rem;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+        }
+
+        .signal-card__recommendation-title {
+          display: block;
+          margin-top: 5px;
+          font-size: 1.65rem;
+          letter-spacing: -0.04em;
+        }
+
+        .signal-card__muted {
+          display: block;
+          margin-top: 4px;
+          color: #6b819f;
+          font-size: 0.78rem;
+        }
+
+        .signal-card__confidence {
+          text-align: right;
+        }
+
+        .signal-card__confidence strong {
+          display: block;
+          margin-top: 3px;
+          color: #00a876;
+          font-size: 1.8rem;
+          letter-spacing: -0.04em;
+        }
+
+        .signal-card__progress {
+          grid-column: 1 / -1;
+          height: 9px;
+          margin-top: 7px;
+          overflow: hidden;
+          border-radius: 999px;
+          background: #d5dfeb;
+        }
+
+        .signal-card__progress span {
+          display: block;
+          width: 92%;
+          height: 100%;
+          border-radius: inherit;
+          background: #00bd82;
+        }
+
+        .signal-card__grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+          margin-top: 14px;
+        }
+
+        .signal-card__metric {
+          min-height: 94px;
+          padding: 17px 16px;
+          border-radius: 18px;
+        }
+
+        .signal-card__metric strong {
+          display: block;
+          margin-top: 5px;
+          font-size: 1rem;
+          letter-spacing: -0.02em;
+        }
+
+        .signal-card__footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-top: 14px;
+          padding: 16px 18px;
+          border-radius: 18px;
+          color: #536987;
+          font-size: 0.82rem;
+        }
+
+        .signal-card__footer strong {
+          color: #16223a;
+          white-space: nowrap;
+        }
+
+        .hero-card {
+          width: 100%;
+          border-radius: 32px;
+          padding: 24px;
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(248, 243, 233, 0.72));
+          border: 1px solid var(--border-subtle);
+          box-shadow: 0 24px 60px rgba(28, 23, 18, 0.08), inset 0 0 20px rgba(255, 255, 255, 0.4);
+          backdrop-filter: blur(16px);
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+          animation: floatOrb 10s ease-in-out infinite;
+        }
+
+        .hero-card__header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .hero-card__badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 12px;
+          border-radius: 999px;
+          background: rgba(6, 182, 212, 0.1);
+          border: 1px solid rgba(6, 182, 212, 0.25);
+          color: #0891b2;
+          font-size: 0.75rem;
+          font-weight: 700;
+          font-family: var(--font-mono);
+          text-transform: uppercase;
+        }
+
+        .hero-card__live-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #06b6d4;
+          box-shadow: 0 0 10px #06b6d4;
+          animation: orbPulse 1.5s ease-in-out infinite;
+        }
+
+        .hero-card__role {
+          font-size: 0.78rem;
+          font-family: var(--font-mono);
+          color: var(--text-muted);
+          font-weight: 600;
+        }
+
+        .hero-card__stage {
+          width: 100%;
+          height: 270px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.08), transparent 70%);
+          border-radius: 24px;
+          overflow: hidden;
+        }
+
+        .hero-card__ticker {
+          padding: 16px;
+          border-radius: 18px;
+          background: rgba(255, 255, 255, 0.8);
+          border: 1px solid var(--border-subtle);
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .hero-card__speaker {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 0.72rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          font-family: var(--font-mono);
+          color: var(--accent-strong);
+        }
+
+        .hero-card__speaker-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: var(--accent-strong);
+        }
+
+        .hero-card__question {
+          font-size: 0.88rem;
+          line-height: 1.45;
+          color: var(--text-primary);
+          font-style: italic;
+        }
+
+        .hero-card__metrics {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
+          padding-top: 6px;
+          border-top: 1px solid rgba(28, 23, 18, 0.06);
+        }
+
+        .hero-card__metric-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+        }
+
+        .hero-card__metric-val {
+          font-family: var(--font-mono);
+          font-weight: 800;
+          font-size: 0.88rem;
+          color: var(--text-primary);
+        }
+
+        .hero-card__metric-lbl {
+          font-size: 0.68rem;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          font-weight: 600;
+          margin-top: 2px;
         }
 
         .landing-hero__copy {
@@ -321,6 +836,7 @@ export default function HomePage() {
           gap: 22px;
           max-width: 720px;
         }
+
 
         .landing-kicker {
           animation: fadeUp 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -666,42 +1182,53 @@ export default function HomePage() {
 
         .star-list {
           display: grid;
-          gap: 20px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 18px;
         }
 
-        .star-row {
+        .star-card {
+          padding: 24px;
+          border-radius: 28px;
+          background: rgba(255, 255, 255, 0.72);
+          border: 1px solid rgba(28, 23, 18, 0.08);
+          box-shadow: var(--shadow-card);
           display: grid;
-          grid-template-columns: 90px minmax(0, 1fr);
-          gap: 20px;
-          align-items: start;
-          padding: 22px 0;
-          border-top: 1px solid rgba(28, 23, 18, 0.08);
+          gap: 14px;
         }
 
-        .star-row:last-child {
-          border-bottom: 1px solid rgba(28, 23, 18, 0.08);
+        .star-card__top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
         }
 
-        .star-row__number {
+        .star-card__index {
           font-family: var(--font-display);
-          font-size: 2.8rem;
+          font-size: 2rem;
           line-height: 1;
           font-weight: 700;
           color: var(--accent-strong);
         }
 
-        .star-row__title {
+        .star-card__eyebrow {
+          font-family: var(--font-mono);
+          font-size: 0.7rem;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          color: var(--text-muted);
+        }
+
+        .star-card__title {
           font-family: var(--font-display);
-          font-size: clamp(1.6rem, 2.4vw, 2.4rem);
+          font-size: clamp(1.5rem, 2.1vw, 2.1rem);
           letter-spacing: -0.05em;
           line-height: 1.02;
         }
 
-        .star-row__body {
-          margin-top: 10px;
+        .star-card__body {
           color: var(--text-secondary);
           line-height: 1.7;
-          max-width: 64ch;
         }
 
         .landing-section--cta {
@@ -795,7 +1322,7 @@ export default function HomePage() {
           }
 
           .process-row,
-          .star-row {
+          .star-list {
             grid-template-columns: 1fr;
           }
 
@@ -827,6 +1354,24 @@ export default function HomePage() {
 
           .landing-actions {
             width: 100%;
+          }
+
+          .workspace-card {
+            padding: 20px;
+          }
+
+          .workspace-card__header,
+          .workspace-card__footer {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .workspace-card__tools {
+            grid-template-columns: 1fr;
+          }
+
+          .star-list {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>

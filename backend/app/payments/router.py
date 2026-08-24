@@ -1,6 +1,8 @@
 import os
 import json
+from typing import Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Request, Header
+from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 import stripe
 
@@ -9,11 +11,76 @@ from app.services.auth_service import auth_service
 from app.subscriptions.models import Plan, Subscription, Payment, UserUsage
 from app.payments.service import get_payment_service
 from app.payments.webhook import handle_stripe_event
+from app.payments.razorpay import (
+    create_razorpay_order,
+    process_payment_verification,
+    RazorpayClientManager
+)
 
 router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_mock")
 stripe_webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "whsec_mock")
+
+# --- Request / Response Models ---
+
+class CreateOrderRequest(BaseModel):
+    amount: int = Field(..., description="Amount in smallest currency unit (e.g. paise for INR, minimum 100)")
+    currency: Optional[str] = Field("INR", description="Currency code (e.g., INR)")
+    receipt: Optional[str] = Field(None, description="Receipt / internal reference ID")
+    notes: Optional[Dict[str, Any]] = Field(None, description="Additional custom metadata")
+
+class VerifyPaymentRequest(BaseModel):
+    razorpay_order_id: str = Field(..., description="Razorpay Order ID")
+    razorpay_payment_id: str = Field(..., description="Razorpay Payment ID")
+    razorpay_signature: str = Field(..., description="Razorpay Signature")
+    user_id: Optional[str] = Field(None, description="Optional user ID for subscription linking")
+    plan_id: Optional[str] = Field("pro", description="Subscription plan ID")
+
+
+# --- Razorpay Standard Endpoints ---
+
+@router.post("/create-order")
+def create_order_endpoint(req: CreateOrderRequest):
+    """
+    Creates a Razorpay order.
+    Minimum amount: 100 paise.
+    Returns: { order_id, amount, currency, key_id }
+    """
+    return create_razorpay_order(
+        amount=req.amount,
+        currency=req.currency or "INR",
+        receipt=req.receipt,
+        notes=req.notes
+    )
+
+@router.post("/verify-payment")
+def verify_payment_endpoint(req: VerifyPaymentRequest, db: Session = Depends(get_session)):
+    """
+    Verifies Razorpay payment signature using HMAC-SHA256.
+    Returns success if signature matches, 400 otherwise.
+    """
+    return process_payment_verification(
+        razorpay_order_id=req.razorpay_order_id,
+        razorpay_payment_id=req.razorpay_payment_id,
+        razorpay_signature=req.razorpay_signature,
+        user_id=req.user_id,
+        plan_id=req.plan_id,
+        db=db
+    )
+
+@router.get("/config")
+def get_payment_config():
+    """
+    Returns public payment provider configuration (Key IDs only, never secrets).
+    """
+    return {
+        "provider": os.getenv("PAYMENT_PROVIDER", "razorpay"),
+        "razorpay_key_id": RazorpayClientManager.get_key_id()
+    }
+
+
+# --- Subscription & Plan Management ---
 
 @router.get("/plans")
 def list_plans(db: Session = Depends(get_session)):

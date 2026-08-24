@@ -110,7 +110,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
               <div style={{ fontFamily: "var(--font-display)", fontSize: "1.2rem", fontWeight: 700, letterSpacing: "-0.05em" }}>
                 Veriq
               </div>
-              <div className="fine-print">AI co-pilot active</div>
+              <div className="fine-print">Interview suite ready</div>
             </div>
           </button>
 

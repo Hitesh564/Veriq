@@ -83,10 +83,10 @@ export default function HistoryPage() {
           <div className="hero-panel">
             <div className="section-kicker">History</div>
             <h1 className="page-title" style={{ marginTop: "18px", maxWidth: "12ch" }}>
-              Interview history in a clean, readable view.
+              Your interview progress, in one place.
             </h1>
             <p className="hero-copy" style={{ marginTop: "14px", maxWidth: "60ch" }}>
-              Review completed sessions, jump back into unfinished practice, and filter by role or difficulty.
+              Revisit completed sessions, resume unfinished practice, and track how your preparation is building over time.
             </p>
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "22px" }}>
               <button className="btn btn-primary" onClick={() => router.push("/new-interview")}>
@@ -101,17 +101,17 @@ export default function HistoryPage() {
           <div className="hero-visual" style={{ padding: "28px", minHeight: "320px" }}>
             <div className="soft-grid">
               <div className="card" style={{ padding: "18px" }}>
-                <div className="ambient-label">Sessions</div>
+                <div className="ambient-label">Saved sessions</div>
                 <div style={{ fontFamily: "var(--font-display)", fontSize: "2.8rem", fontWeight: 700, marginTop: "6px" }}>{counts.total}</div>
                 <p className="section-copy">Total saved practice runs.</p>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "14px" }}>
                 <div className="card" style={{ padding: "16px" }}>
-                  <div className="ambient-label">Completed</div>
+                  <div className="ambient-label">Completed interviews</div>
                   <div style={{ fontSize: "2rem", fontWeight: 700, marginTop: "6px" }}>{counts.completed}</div>
                 </div>
                 <div className="card" style={{ padding: "16px" }}>
-                  <div className="ambient-label">In progress</div>
+                  <div className="ambient-label">Unfinished practice</div>
                   <div style={{ fontSize: "2rem", fontWeight: 700, marginTop: "6px" }}>{counts.active}</div>
                 </div>
               </div>
@@ -185,8 +185,8 @@ export default function HistoryPage() {
           </div>
 
           <div className="feature-card feature-card--tall">
-            <div className="ambient-label">Session summary</div>
-            <h2 className="headline" style={{ marginTop: "10px" }}>Quick scan</h2>
+            <div className="ambient-label">Your interview profile</div>
+            <h2 className="headline" style={{ marginTop: "10px" }}>At a glance</h2>
             <div style={{ display: "grid", gap: "12px", marginTop: "18px" }}>
               {[
                 { label: "Most recent", value: sessions[0]?.role || "No sessions yet" },

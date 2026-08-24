@@ -30,6 +30,7 @@ class InterviewBase(SQLModel):
     blueprint_json: Optional[str] = Field(default=None)
     user_id: str = Field(index=True, nullable=False)
     resume_path: Optional[str] = Field(default=None)
+    is_deleted: bool = Field(default=False, nullable=False)
 
 
 class Interview(InterviewBase, table=True):
@@ -63,7 +64,7 @@ class TranscriptBase(SQLModel):
 
 class Transcript(TranscriptBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    interview_id: str = Field(foreign_key="interview.id", index=True)
+    interview_id: str = Field(foreign_key="interview.id", index=True, ondelete="CASCADE")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     
     # Relationship back to interview
@@ -72,7 +73,7 @@ class Transcript(TranscriptBase, table=True):
 
 class EvaluationReport(SQLModel, table=True):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    interview_id: str = Field(foreign_key="interview.id", unique=True, index=True)
+    interview_id: str = Field(foreign_key="interview.id", unique=True, index=True, ondelete="CASCADE")
     overall_score: int
     technical_score: int
     communication_score: int
@@ -105,7 +106,7 @@ class UserProfile(SQLModel, table=True):
 class StudyPlan(SQLModel, table=True):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     user_id: str = Field(index=True, nullable=False)
-    associated_interview_id: Optional[str] = Field(default=None, foreign_key="interview.id", nullable=True)
+    associated_interview_id: Optional[str] = Field(default=None, foreign_key="interview.id", nullable=True, ondelete="CASCADE")
     roadmap_json: str = Field(default="[]")
     recommended_resources_json: str = Field(default="[]")
     practice_questions_json: str = Field(default="[]")
