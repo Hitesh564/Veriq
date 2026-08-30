@@ -3,6 +3,7 @@ uvicorn[standard]
 sqlmodel
 langgraph
 langchain-google-genai
+langchain-core
 python-dotenv
 qdrant-client
 pypdf
@@ -14,3 +15,7 @@ supabase
 razorpay
 webrtcvad
 setuptools==80.9.0
+edge-tts
+httpx
+stripe
+alembic
