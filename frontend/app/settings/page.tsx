@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { supabase } from "../utils/supabaseClient";
+import { API_BASE_URL } from "../utils/api";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function SettingsPage() {
         alert("You must be logged in to reset your profile data.");
         return;
       }
-      const res = await fetch("http://127.0.0.1:8000/api/v1/interviews/profile/reset", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/interviews/profile/reset`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${session.access_token}`

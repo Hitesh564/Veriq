@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "../../../context/AuthContext";
 import { supabase } from "../../../utils/supabaseClient";
+import { API_BASE_URL } from "../../../utils/api";
 import HologramAvatar from "../../../components/HologramAvatar";
 
 
@@ -149,7 +150,7 @@ export default function VoiceInterviewRoom() {
         const authSession = await getAuthSession();
         if (!authSession) return;
 
-        const res = await fetch(`http://127.0.0.1:8000/api/v1/interviews/${id}`, {
+        const res = await fetch(`${API_BASE_URL}/api/v1/interviews/${id}`, {
           headers: {
             "Authorization": `Bearer ${authSession.access_token}`
           }
@@ -442,7 +443,8 @@ export default function VoiceInterviewRoom() {
       const session = await getAuthSession();
       if (!session) return;
       const tokenParam = `?token=${session.access_token}`;
-      const wsUrl = `ws://127.0.0.1:8000/api/voice/interview/${id}${tokenParam}`;
+      const wsBaseUrl = API_BASE_URL.replace(/^http/, "ws");
+      const wsUrl = `${wsBaseUrl}/api/voice/interview/${id}${tokenParam}`;
       const ws = new WebSocket(wsUrl);
       geminiWsRef.current = ws;
 
@@ -609,7 +611,7 @@ export default function VoiceInterviewRoom() {
       if (session) {
         headers["Authorization"] = `Bearer ${session.access_token}`;
       }
-      const res = await fetch("http://127.0.0.1:8000/api/interview/end", {
+      const res = await fetch(`${API_BASE_URL}/api/interview/end`, {
         method: "POST",
         headers,
         body: JSON.stringify({ session_id: id })

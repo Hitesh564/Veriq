@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../utils/supabaseClient";
+import { API_BASE_URL } from "../../utils/api";
 
 interface ChatMessage {
   sender: "interviewer" | "candidate";
@@ -70,7 +71,7 @@ export default function TextInterviewRoom() {
           "Authorization": `Bearer ${authSession.access_token}`
         };
 
-        const res = await fetch(`http://127.0.0.1:8000/api/v1/interviews/${id}`, { headers });
+        const res = await fetch(`${API_BASE_URL}/api/v1/interviews/${id}`, { headers });
         if (!res.ok) {
           if (res.status === 401 || res.status === 403) {
             setError("Authentication failed. Please log in again.");
@@ -100,7 +101,8 @@ export default function TextInterviewRoom() {
           return;
         }
 
-        ws = new WebSocket(`ws://127.0.0.1:8000/api/v1/interviews/${id}/stream?token=${authSession.access_token}`);
+        const wsBaseUrl = API_BASE_URL.replace(/^http/, "ws");
+        ws = new WebSocket(`${wsBaseUrl}/api/v1/interviews/${id}/stream?token=${authSession.access_token}`);
         wsRef.current = ws;
 
         ws.onmessage = (event) => {
@@ -183,7 +185,7 @@ export default function TextInterviewRoom() {
         const headers = {
           "Authorization": `Bearer ${authSession.access_token}`
         };
-        await fetch(`http://127.0.0.1:8000/api/v1/interviews/${id}/end`, {
+        await fetch(`${API_BASE_URL}/api/v1/interviews/${id}/end`, {
           method: "POST",
           headers
         });
