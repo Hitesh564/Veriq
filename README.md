@@ -39,69 +39,23 @@ Instead of treating every question independently, Veriq maintains context across
 
 # Product Preview
 
-<!--
-CREATE THIS FOLDER IN THE ROOT OF THE REPOSITORY:
+## Veriq Interview Platform
 
-assets/
-├── landing-page.png
-├── interview-setup.png
-├── live-interview.png
-├── evaluation-dashboard.png
-└── transcript-history.png
+Veriq provides a complete workspace for role-aware, voice-first interview practice with adaptive questioning, contextual follow-ups, and structured feedback.
 
-Take clean screenshots from the deployed product and save them with these exact names.
--->
-
-## Landing Page
-
-<!-- ADD SCREENSHOT 1 HERE -->
-<!-- File: assets/landing-page.png -->
-
-![Veriq Landing Page](assets/landing-page.png)
+<p align="center">
+  <img src="landing-page.png.png" width="950" alt="Veriq AI Interview Platform">
+</p>
 
 ---
 
-## Interview Configuration
+## Evidence-Grounded Interview Evaluation
 
-Candidates can configure interviews around their target role, resume, job description, difficulty, duration, and preferred interview style.
+Rather than returning only a generic interview score, Veriq analyzes candidate responses to identify strengths, gaps, technical claims, verification signals, and targeted learning priorities.
 
-<!-- ADD SCREENSHOT 2 HERE -->
-<!-- File: assets/interview-setup.png -->
-
-![Interview Setup](assets/interview-setup.png)
-
----
-
-## Live AI Interview
-
-The interview room conducts a real-time, voice-first conversation while maintaining context across candidate responses.
-
-<!-- ADD SCREENSHOT 3 HERE -->
-<!-- File: assets/live-interview.png -->
-
-![Live AI Interview](assets/live-interview.png)
-
----
-
-## Evaluation & Insights
-
-After an interview, Veriq converts the session into structured feedback containing strengths, weaknesses, readiness signals, and areas that require improvement.
-
-<!-- ADD SCREENSHOT 4 HERE -->
-<!-- File: assets/evaluation-dashboard.png -->
-
-![Evaluation Dashboard](assets/evaluation-dashboard.png)
-
----
-
-## Transcript & History
-
-Interview transcripts and previous sessions remain available for review and future progress tracking.
-
-<!-- ADD SCREENSHOT 5 HERE -->
-<!-- File: assets/transcript-history.png -->
-
-![Transcript History](assets/transcript-history.png)
+<p align="center">
+  <img src="evaluation-dashboard.png.png" width="950" alt="Veriq Evidence-Grounded Interview Evaluation">
+</p>
 
 ---
 
@@ -978,18 +932,10 @@ Veriq/
 │       └── main.py
 │
 ├── frontend/
-│   ├── app/
-│   │   ├── components/
-│   │   ├── interview/
-│   │   ├── new-interview/
-│   │   ├── history/
-│   │   ├── learning/
-│   │   ├── profile/
-│   │   ├── billing/
-│   │   └── ...
-│   │
 │   └── ...
 │
+├── landing-page.png.png
+├── evaluation-dashboard.png.png
 ├── requirements.txt
 ├── .env.example
 ├── LICENSE
@@ -1148,40 +1094,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 > **Never commit production credentials or private API keys to the repository.**
-
----
-
-# Optional Demo GIF
-
-<!--
-THIS IS OPTIONAL, BUT HIGHLY RECOMMENDED.
-
-Once the screenshots are added, you can record a 15–30 second GIF showing:
-
-1. New Interview
-2. Select role/resume/JD
-3. Enter interview room
-4. AI asks question
-5. User responds
-6. AI asks contextual follow-up
-7. Evaluation dashboard
-
-Save as:
-
-assets/veriq-demo.gif
-
-Then UNCOMMENT the following section.
--->
-
-<!--
-
-## Demo
-
-<p align="center">
-  <img src="assets/veriq-demo.gif" width="900" alt="Veriq Demo">
-</p>
-
--->
 
 ---
 
